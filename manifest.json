@@ -1,11 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Brave New Tab",
-  "description": "Custom New Tab dashboard for Brave and Chromium browsers.",
+  "description": "Персональная новая вкладка для Brave и Chromium браузеров.",
   "chrome_url_overrides": {
     "newtab": "src/pages/newtab/index.html"
   },
   "icons": {
+    "16": "icon-32.png",
+    "32": "icon-32.png",
     "128": "icon-128.png"
   },
   "permissions": [
@@ -14,6 +16,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "favicon.svg",
         "icon-128.png",
         "icon-32.png"
       ],

@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1e24" />
+      <stop offset="100%" stop-color="#0e0f14" />
+    </linearGradient>
+
+    <!-- Border Highlight -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.3)" />
+      <stop offset="100%" stop-color="rgba(255,255,255,0.05)" />
+    </linearGradient>
+
+    <!-- Brave Coral / Indigo Accents -->
+    <linearGradient id="tileGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6b35" />
+      <stop offset="100%" stop-color="#f72585" />
+    </linearGradient>
+
+    <linearGradient id="tileGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7209b7" />
+      <stop offset="100%" stop-color="#4361ee" />
+    </linearGradient>
+
+    <linearGradient id="tileGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4cc9f0" />
+      <stop offset="100%" stop-color="#4361ee" />
+    </linearGradient>
+
+    <linearGradient id="tileGrad4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffb703" />
+      <stop offset="100%" stop-color="#fb8500" />
+    </linearGradient>
+
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base -->
+  <rect x="6" y="6" width="116" height="116" rx="28" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="2" filter="url(#glow)"/>
+
+  <!-- 4 Speed Dial / Tab Tiles -->
+  <g transform="translate(24, 24)">
+    <!-- Top Left (Brave Orange/Magenta) -->
+    <rect x="0" y="0" width="36" height="36" rx="9" fill="url(#tileGrad1)" />
+    
+    <!-- Top Right (Violet/Blue) -->
+    <rect x="44" y="0" width="36" height="36" rx="9" fill="url(#tileGrad2)" />
+
+    <!-- Bottom Left (Cyan/Blue) -->
+    <rect x="0" y="44" width="36" height="36" rx="9" fill="url(#tileGrad3)" />
+
+    <!-- Bottom Right (Golden/Orange) -->
+    <rect x="44" y="44" width="36" height="36" rx="9" fill="url(#tileGrad4)" />
+
+    <!-- Subtle inner accents: mini icons/dots -->
+    <circle cx="18" cy="18" r="4" fill="rgba(255,255,255,0.9)" />
+    <circle cx="62" cy="18" r="4" fill="rgba(255,255,255,0.9)" />
+    <circle cx="18" cy="62" r="4" fill="rgba(255,255,255,0.9)" />
+    <circle cx="62" cy="62" r="4" fill="rgba(255,255,255,0.9)" />
+  </g>
+</svg>
