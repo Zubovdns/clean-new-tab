@@ -1,16 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Brave New Tab",
-  "description": "Customized New Tab dashboard extension for Brave and Chromium browsers.",
-  "options_ui": {
-    "page": "src/pages/options/index.html"
-  },
-  "action": {
-    "default_popup": "src/pages/popup/index.html",
-    "default_icon": {
-      "32": "icon-32.png"
-    }
-  },
+  "description": "Custom New Tab dashboard for Brave and Chromium browsers.",
   "chrome_url_overrides": {
     "newtab": "src/pages/newtab/index.html"
   },
@@ -18,8 +9,7 @@
     "128": "icon-128.png"
   },
   "permissions": [
-    "storage",
-    "activeTab"
+    "storage"
   ],
   "web_accessible_resources": [
     {

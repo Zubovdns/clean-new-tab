@@ -1,280 +1,214 @@
 import React, { useState, useEffect } from 'react';
 import { getStorageItem, setStorageItem } from '@utils/storage';
 
-interface QuickLink {
+interface TabItem {
   id: string;
   title: string;
   url: string;
-  icon?: string;
 }
 
-const DEFAULT_LINKS: QuickLink[] = [
+const STORAGE_KEY = 'brave_user_tabs';
+
+const DEFAULT_TABS: TabItem[] = [
   { id: '1', title: 'GitHub', url: 'https://github.com' },
   { id: '2', title: 'Brave Search', url: 'https://search.brave.com' },
   { id: '3', title: 'YouTube', url: 'https://youtube.com' },
   { id: '4', title: 'Reddit', url: 'https://reddit.com' },
-  { id: '5', title: 'ChatGPT', url: 'https://chatgpt.com' },
 ];
 
-const SEARCH_ENGINES: Record<string, { name: string; url: string }> = {
-  brave: { name: 'Brave', url: 'https://search.brave.com/search?q=' },
-  google: { name: 'Google', url: 'https://www.google.com/search?q=' },
-  duckduckgo: { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' },
-  yandex: { name: 'Яндекс', url: 'https://yandex.ru/search/?text=' },
-};
+function getDomain(rawUrl: string): string {
+  try {
+    const url = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
+    return new URL(url).hostname;
+  } catch {
+    return rawUrl;
+  }
+}
+
+function normalizeUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim();
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+  return trimmed;
+}
 
 export default function Newtab() {
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [searchEngine, setSearchEngine] = useState('brave');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [links, setLinks] = useState<QuickLink[]>(DEFAULT_LINKS);
-  const [note, setNote] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newUrl, setNewUrl] = useState('');
+  const [tabs, setTabs] = useState<TabItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [url, setUrl] = useState('');
+  const [failedFavicons, setFailedFavicons] = useState<Record<string, boolean>>({});
 
-  // Clock interval
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    getStorageItem<TabItem[]>(STORAGE_KEY, DEFAULT_TABS).then((savedTabs) => {
+      setTabs(savedTabs);
+      setIsLoaded(true);
+    });
   }, []);
 
-  // Load saved links and notes
-  useEffect(() => {
-    getStorageItem<QuickLink[]>('brave_newtab_links', DEFAULT_LINKS).then(setLinks);
-    getStorageItem<string>('brave_newtab_note', '').then(setNote);
-    getStorageItem<string>('brave_newtab_engine', 'brave').then(setSearchEngine);
-  }, []);
-
-  const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setNote(val);
-    setStorageItem('brave_newtab_note', val);
+  const saveTabs = (newTabs: TabItem[]) => {
+    setTabs(newTabs);
+    setStorageItem(STORAGE_KEY, newTabs);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleOpenTab = (targetUrl: string) => {
+    window.location.href = normalizeUrl(targetUrl);
+  };
+
+  const handleAddTab = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
-    const engine = SEARCH_ENGINES[searchEngine] || SEARCH_ENGINES.brave;
-    window.location.href = `${engine.url}${encodeURIComponent(searchQuery.trim())}`;
+    if (!url.trim()) return;
+
+    const normalizedUrl = normalizeUrl(url);
+    const domain = getDomain(normalizedUrl);
+    const resolvedTitle = title.trim() || domain;
+
+    const newTab: TabItem = {
+      id: Date.now().toString(),
+      title: resolvedTitle,
+      url: normalizedUrl,
+    };
+
+    const updated = [...tabs, newTab];
+    saveTabs(updated);
+
+    setTitle('');
+    setUrl('');
+    setIsModalOpen(false);
   };
 
-  const handleAddLink = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim() || !newUrl.trim()) return;
-    let formattedUrl = newUrl.trim();
-    if (!/^https?:\/\//i.test(formattedUrl)) {
-      formattedUrl = `https://${formattedUrl}`;
-    }
-    const updated = [
-      ...links,
-      { id: Date.now().toString(), title: newTitle.trim(), url: formattedUrl },
-    ];
-    setLinks(updated);
-    setStorageItem('brave_newtab_links', updated);
-    setNewTitle('');
-    setNewUrl('');
-    setShowAddModal(false);
-  };
-
-  const handleDeleteLink = (id: string, e: React.MouseEvent) => {
+  const handleDeleteTab = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updated = links.filter((link) => link.id !== id);
-    setLinks(updated);
-    setStorageItem('brave_newtab_links', updated);
+    const updated = tabs.filter((tab) => tab.id !== id);
+    saveTabs(updated);
   };
 
-  const getGreeting = () => {
-    const hour = currentTime.getHours();
-    if (hour >= 5 && hour < 12) return 'Доброе утро';
-    if (hour >= 12 && hour < 18) return 'Добрый день';
-    if (hour >= 18 && hour < 23) return 'Добрый вечер';
-    return 'Доброй ночи';
+  const handleFaviconError = (id: string) => {
+    setFailedFavicons((prev) => ({ ...prev, [id]: true }));
   };
 
-  const formattedTime = currentTime.toLocaleTimeString('ru-RU', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-
-  const formattedDate = currentTime.toLocaleDateString('ru-RU', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  if (!isLoaded) {
+    return <div className="min-h-screen bg-[#0d1117]" />;
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-slate-100 flex flex-col justify-between p-6 select-none">
-      {/* Top Bar */}
-      <header className="flex justify-between items-center max-w-6xl w-full mx-auto">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-xs text-slate-300">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>Brave New Tab Extension</span>
-          <span className="text-slate-500">•</span>
-          <span className="text-indigo-300">v0.1.0</span>
-        </div>
+    <div className="min-h-screen bg-[#0d1117] text-white flex items-center justify-center p-6 select-none font-sans">
+      <main className="w-full max-w-4xl">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {tabs.map((tab) => {
+            const domain = getDomain(tab.url);
+            const hasFaviconError = failedFavicons[tab.id];
 
-        <div className="flex items-center gap-3">
-          <select
-            value={searchEngine}
-            onChange={(e) => {
-              setSearchEngine(e.target.value);
-              setStorageItem('brave_newtab_engine', e.target.value);
-            }}
-            className="bg-white/5 border border-white/10 text-slate-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
-          >
-            {Object.entries(SEARCH_ENGINES).map(([key, engine]) => (
-              <option key={key} value={key} className="bg-slate-900 text-slate-200">
-                Поиск: {engine.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </header>
-
-      {/* Main Center Section */}
-      <main className="max-w-4xl w-full mx-auto my-auto flex flex-col items-center gap-8 py-8">
-        {/* Clock & Greeting */}
-        <div className="text-center space-y-2">
-          <h1 className="text-7xl md:text-8xl font-extralight tracking-tight text-white drop-shadow-sm font-mono">
-            {formattedTime}
-          </h1>
-          <p className="text-lg md:text-xl font-medium text-slate-300 capitalize">
-            {formattedDate}
-          </p>
-          <p className="text-sm md:text-base text-indigo-200/80 font-light">
-            {getGreeting()}!
-          </p>
-        </div>
-
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="w-full max-w-2xl relative">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`Искать в ${SEARCH_ENGINES[searchEngine]?.name || 'Интернете'} или ввести URL...`}
-            className="w-full py-4 pl-5 pr-14 rounded-2xl bg-white/10 hover:bg-white/15 focus:bg-white/15 border border-white/15 focus:border-indigo-400 backdrop-blur-xl text-white placeholder-slate-400 shadow-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all text-base"
-          />
-          <button
-            type="submit"
-            className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
-          >
-            Искать
-          </button>
-        </form>
-
-        {/* Quick Links */}
-        <div className="w-full max-w-3xl">
-          <div className="flex items-center justify-between mb-3 px-1">
-            <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
-              Быстрый доступ
-            </span>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 cursor-pointer"
-            >
-              + Добавить ссылку
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-            {links.map((link) => (
+            return (
               <div
-                key={link.id}
-                className="group relative flex flex-col items-center justify-center p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-indigo-400/40 backdrop-blur-md transition-all duration-200 cursor-pointer text-center"
-                onClick={() => (window.location.href = link.url)}
+                key={tab.id}
+                onClick={() => handleOpenTab(tab.url)}
+                className="group relative flex flex-col items-center justify-center p-5 rounded-2xl bg-neutral-900/70 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl hover:-translate-y-1"
               >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600/30 to-purple-600/30 border border-indigo-400/20 flex items-center justify-center text-sm font-bold text-indigo-200 mb-2 group-hover:scale-105 transition-transform">
-                  {link.title.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-xs font-medium text-slate-200 truncate w-full">
-                  {link.title}
-                </span>
-
+                {/* Delete button */}
                 <button
-                  onClick={(e) => handleDeleteLink(link.id, e)}
-                  title="Удалить"
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] hidden group-hover:flex items-center justify-center shadow hover:bg-rose-500 transition-all cursor-pointer"
+                  type="button"
+                  onClick={(e) => handleDeleteTab(tab.id, e)}
+                  title="Удалить вкладку"
+                  className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-neutral-800 text-neutral-400 hover:text-white hover:bg-rose-600 transition-colors opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs"
                 >
                   ✕
                 </button>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Scratchpad Note */}
-        <div className="w-full max-w-2xl bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-md">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Быстрые заметки (сохраняются автоматически)
-            </span>
-            <span className="text-[10px] text-slate-500">chrome.storage.local</span>
-          </div>
-          <textarea
-            value={note}
-            onChange={handleNoteChange}
-            placeholder="Напишите список задач или мысли на сегодня..."
-            rows={3}
-            className="w-full bg-transparent text-sm text-slate-200 placeholder-slate-500 resize-none focus:outline-none"
-          />
+                {/* Favicon / Icon */}
+                <div className="w-12 h-12 rounded-xl bg-neutral-800/90 flex items-center justify-center mb-3 overflow-hidden shadow-inner">
+                  {!hasFaviconError ? (
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+                      alt={tab.title}
+                      className="w-7 h-7 object-contain"
+                      onError={() => handleFaviconError(tab.id)}
+                    />
+                  ) : (
+                    <span className="text-lg font-semibold text-neutral-300">
+                      {tab.title.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+
+                {/* Title */}
+                <span className="text-sm font-medium text-neutral-200 group-hover:text-white truncate w-full text-center px-1">
+                  {tab.title}
+                </span>
+              </div>
+            );
+          })}
+
+          {/* Add Tab Button */}
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-dashed border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900/40 text-neutral-400 hover:text-white transition-all duration-200 cursor-pointer min-h-[128px] group"
+          >
+            <div className="w-12 h-12 rounded-xl bg-neutral-800/40 group-hover:bg-neutral-800 flex items-center justify-center mb-3 transition-colors">
+              <span className="text-2xl font-light leading-none">+</span>
+            </div>
+            <span className="text-sm font-medium">Добавить</span>
+          </button>
         </div>
       </main>
 
-      {/* Footer Info */}
-      <footer className="flex flex-col sm:flex-row justify-between items-center gap-2 max-w-6xl w-full mx-auto text-xs text-slate-500">
-        <div>
-          Разработка: редактируйте{' '}
-          <code className="px-1.5 py-0.5 rounded bg-white/5 text-indigo-300 font-mono">
-            src/pages/newtab/Newtab.tsx
-          </code>
-        </div>
-        <div>Стек: Vite • React 19 • TypeScript • Tailwind CSS • CRXJS (MV3)</div>
-      </footer>
+      {/* Modal: Add Tab */}
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-150"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-white">Добавить вкладку</h2>
 
-      {/* Add Link Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="text-lg font-semibold text-white">Добавить быстрый доступ</h3>
-            <form onSubmit={handleAddLink} className="space-y-3">
+            <form onSubmit={handleAddTab} className="space-y-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Название</label>
+                <label className="block text-xs font-medium text-neutral-400 mb-1">
+                  URL адрес *
+                </label>
                 <input
                   type="text"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="Например: Почта"
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-indigo-400"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="github.com или https://..."
+                  required
                   autoFocus
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-800/80 border border-neutral-700 text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-neutral-500 transition-colors"
                 />
               </div>
+
               <div>
-                <label className="block text-xs text-slate-400 mb-1">URL адрес</label>
+                <label className="block text-xs font-medium text-neutral-400 mb-1">
+                  Название (необязательно)
+                </label>
                 <input
                   type="text"
-                  value={newUrl}
-                  onChange={(e) => setNewUrl(e.target.value)}
-                  placeholder="https://example.com"
-                  className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-indigo-400"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Например: GitHub"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-800/80 border border-neutral-700 text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-neutral-500 transition-colors"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
+
+              <div className="flex justify-end gap-2 pt-3">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-lg text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-medium text-neutral-400 hover:text-white transition-colors cursor-pointer"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-white text-black hover:bg-neutral-200 transition-colors shadow cursor-pointer"
                 >
-                  Сохранить
+                  Добавить
                 </button>
               </div>
             </form>
