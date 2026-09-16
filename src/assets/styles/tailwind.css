@@ -1,11 +1,66 @@
 @import "tailwindcss";
 
-@theme {
-    --animate-spin-slow: spin 20s linear infinite;
+@layer base {
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
 
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
+:root {
+  --apple-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes macosModalIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes macosBackdropIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-macos-modal {
+  animation: macosModalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-macos-backdrop {
+  animation: macosBackdropIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.macos-glass {
+  background: rgba(30, 32, 38, 0.78);
+  backdrop-filter: blur(40px) saturate(190%);
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 24px 70px -12px rgba(0, 0, 0, 0.75),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.macos-tile {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
+              background-color 0.2s ease, 
+              border-color 0.2s ease, 
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.macos-tile:hover {
+  transform: scale(1.05) translateY(-2px);
+}
+
+.macos-tile:active {
+  transform: scale(0.96);
 }
