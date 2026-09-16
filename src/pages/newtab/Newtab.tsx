@@ -140,7 +140,6 @@ export default function Newtab() {
     setFailedFavicons((prev) => ({ ...prev, [id]: true }));
   };
 
-  // Open add tab modal
   const openAddTabModal = (folderId: string | null = null) => {
     setTargetFolderIdForNewTab(folderId);
     setNewTabUrl('');
@@ -148,13 +147,11 @@ export default function Newtab() {
     setModalMode('add_tab');
   };
 
-  // Open add folder modal
   const openAddFolderModal = () => {
     setNewFolderTitle('');
     setModalMode('add_folder');
   };
 
-  // Submit adding new tab
   const handleAddTabSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTabUrl.trim()) return;
@@ -186,7 +183,6 @@ export default function Newtab() {
     setTargetFolderIdForNewTab(null);
   };
 
-  // Submit adding new folder
   const handleAddFolderSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const title = newFolderTitle.trim() || 'Новая папка';
@@ -201,7 +197,6 @@ export default function Newtab() {
     setNewFolderTitle('');
   };
 
-  // Delete root item (tab or folder)
   const handleDeleteRootItem = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const updated = items.filter((item) => item.id !== id);
@@ -209,7 +204,6 @@ export default function Newtab() {
     if (activeFolderId === id) setActiveFolderId(null);
   };
 
-  // Delete tab from folder
   const handleDeleteTabFromFolder = (folderId: string, tabId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const updated = items.map((item) => {
@@ -224,7 +218,6 @@ export default function Newtab() {
     saveItems(updated);
   };
 
-  // Move tab from folder to root
   const handleMoveTabToRoot = (folderId: string, tab: TabItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const updatedFolderItems = items.map((item) => {
@@ -240,7 +233,6 @@ export default function Newtab() {
     saveItems(updated);
   };
 
-  // Rename folder
   const handleSaveFoldertitle = (folderId: string) => {
     const trimmed = folderTitleInput.trim();
     if (trimmed) {
@@ -256,7 +248,7 @@ export default function Newtab() {
   };
 
   // =========================================================================
-  // DRAG AND DROP HANDLERS
+  // DRAG AND DROP
   // =========================================================================
 
   const handleRootDragStart = (e: React.DragEvent, item: DashboardItem, index: number) => {
@@ -292,21 +284,15 @@ export default function Newtab() {
     setDragOverRootIndex(null);
     setDragOverFolderTabIndex(null);
     setIsDragOverBackdrop(false);
-    // Slight delay to prevent immediate click trigger
     setTimeout(() => {
       isDraggingRef.current = false;
     }, 60);
   };
 
-  // Drag over a folder card (on root grid)
   const handleFolderCardDragOver = (e: React.DragEvent, folderId: string) => {
-    if (!draggedItem) return;
-    // Don't allow dropping a folder into itself
-    if (draggedItem.id === folderId) return;
-
+    if (!draggedItem || draggedItem.id === folderId) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-
     if (dragOverFolderId !== folderId) {
       setDragOverFolderId(folderId);
     }
@@ -320,14 +306,12 @@ export default function Newtab() {
     }
   };
 
-  // Drop onto a folder (moves tab into folder)
   const handleDropOnFolder = (e: React.DragEvent, targetFolderId: string) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!draggedItem) return;
 
-    // Only tabs can be moved into a folder
     if (draggedItem.itemType === 'tab' && draggedItem.id !== targetFolderId) {
       if (draggedItem.source === 'root') {
         const tabToMove = items.find((it) => it.id === draggedItem.id && it.type === 'tab') as StandaloneTabItem | undefined;
@@ -345,7 +329,6 @@ export default function Newtab() {
         });
         saveItems(updated);
       } else if (draggedItem.source === 'folder' && draggedItem.folderId && draggedItem.folderId !== targetFolderId) {
-        // Move from one folder to another folder
         const sourceFolder = items.find((it) => it.id === draggedItem.folderId && it.type === 'folder') as FolderItem | undefined;
         const tabToMove = sourceFolder?.tabs.find((t) => t.id === draggedItem.id);
         if (!tabToMove) return;
@@ -366,7 +349,6 @@ export default function Newtab() {
     handleDragEnd();
   };
 
-  // Reorder on root grid
   const handleRootCardDragOver = (e: React.DragEvent, index: number) => {
     if (!draggedItem || draggedItem.source !== 'root') return;
     e.preventDefault();
@@ -393,7 +375,6 @@ export default function Newtab() {
     handleDragEnd();
   };
 
-  // Reorder inside folder
   const handleFolderTabDragOver = (e: React.DragEvent, index: number) => {
     if (!draggedItem || draggedItem.source !== 'folder') return;
     e.preventDefault();
@@ -426,7 +407,6 @@ export default function Newtab() {
     handleDragEnd();
   };
 
-  // Drop onto backdrop when dragging from inside folder (moves tab out to root)
   const handleBackdropDrop = (e: React.DragEvent) => {
     e.preventDefault();
     if (draggedItem && draggedItem.source === 'folder' && draggedItem.folderId) {
@@ -443,35 +423,37 @@ export default function Newtab() {
   const foldersList = items.filter((item): item is FolderItem => item.type === 'folder');
 
   if (!isLoaded) {
-    return <div className="min-h-screen bg-[#0d1015]" />;
+    return <div className="min-h-screen bg-[#111318]" />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#141720] via-[#0d1017] to-[#090b10] text-white flex flex-col items-center justify-center p-6 select-none font-sans overflow-x-hidden">
-      {/* Top Action Bar */}
-      <div className="fixed top-5 right-6 flex items-center gap-2 z-20">
+    <div className="min-h-screen bg-[#111318] text-[#e2e2e9] flex flex-col items-center justify-center p-6 select-none font-sans overflow-x-hidden">
+      {/* Top Action Bar (Material 3 FABs) */}
+      <div className="fixed top-6 right-6 flex items-center gap-3 z-20">
         <button
           type="button"
           onClick={() => openAddTabModal(null)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] text-xs font-medium text-neutral-200 hover:text-white backdrop-blur-md shadow-sm transition-all duration-200 cursor-pointer active:scale-95"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#004a77] hover:bg-[#005c94] text-[#c2e7ff] text-sm font-medium shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
         >
-          <span className="text-sm leading-none">+</span>
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
           <span>Вкладка</span>
         </button>
 
         <button
           type="button"
           onClick={openAddFolderModal}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] text-xs font-medium text-neutral-200 hover:text-white backdrop-blur-md shadow-sm transition-all duration-200 cursor-pointer active:scale-95"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#272a32] hover:bg-[#313540] text-[#e2e2e9] text-sm font-medium shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
         >
-          <svg className="w-3.5 h-3.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg className="w-4 h-4 text-[#a8c7fa]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
           </svg>
           <span>Папка</span>
         </button>
       </div>
 
-      {/* Main Grid: Launchpad style with DnD */}
+      {/* Main Grid (Material 3 Cards) */}
       <main className="w-full max-w-4xl py-12">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 sm:gap-6">
           {items.map((item, index) => {
@@ -480,7 +462,7 @@ export default function Newtab() {
             const isReorderTarget = dragOverRootIndex === index && draggedItem?.id !== item.id && !isFolderDropTarget;
 
             if (item.type === 'folder') {
-              // FOLDER TILE
+              // MATERIAL 3 FOLDER TILE
               const previewTabs = item.tabs.slice(0, 4);
 
               return (
@@ -493,42 +475,42 @@ export default function Newtab() {
                   onDragLeave={(e) => handleFolderCardDragLeave(e, item.id)}
                   onDrop={(e) => handleDropOnFolder(e, item.id)}
                   onClick={() => handleFolderClick(item.id, item.title)}
-                  className={`macos-tile group relative flex flex-col items-center justify-center p-4 rounded-3xl cursor-pointer shadow-lg select-none ${
-                    isBeingDragged ? 'macos-tile-dragging' : ''
+                  className={`md-card group relative flex flex-col items-center justify-center p-5 rounded-[24px] cursor-pointer select-none border border-transparent ${
+                    isBeingDragged ? 'md-card-dragging' : ''
                   } ${
                     isFolderDropTarget
-                      ? 'animate-folder-drop bg-indigo-600/30 border-2 border-indigo-400 ring-4 ring-indigo-500/40 shadow-[0_0_35px_rgba(99,102,241,0.5)] z-20'
+                      ? 'animate-md-drop bg-[#004a77]/40 ring-4 ring-[#a8c7fa] border-[#a8c7fa] shadow-2xl z-20'
                       : isReorderTarget
-                      ? 'border-2 border-dashed border-white/40 bg-white/[0.08]'
-                      : 'bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.08] hover:border-white/[0.18]'
-                  } backdrop-blur-xl`}
+                      ? 'border-2 border-dashed border-[#a8c7fa] bg-[#1d2026]'
+                      : 'border-[#33363f]/50'
+                  }`}
                 >
-                  {/* Delete folder button */}
+                  {/* Material Delete Button */}
                   <button
                     type="button"
                     onClick={(e) => handleDeleteRootItem(item.id, e)}
                     title="Удалить папку"
-                    className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-neutral-800/90 text-neutral-400 hover:text-white hover:bg-rose-600 transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs shadow cursor-pointer z-10"
+                    className="absolute top-3 right-3 w-7 h-7 rounded-full bg-[#2a2e37] text-[#c4c7c5] hover:text-[#ffdad6] hover:bg-[#ba1a1a] transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs shadow-md cursor-pointer z-10"
                   >
                     ✕
                   </button>
 
-                  {/* Drop inside folder indicator badge */}
+                  {/* Drop Target Badge */}
                   {isFolderDropTarget && (
-                    <div className="absolute -top-3.5 px-2.5 py-0.5 rounded-full bg-indigo-500 text-white text-[10px] font-semibold tracking-wide shadow-lg animate-bounce pointer-events-none z-30">
+                    <div className="absolute -top-3.5 px-3 py-1 rounded-full bg-[#a8c7fa] text-[#062e6f] text-xs font-semibold tracking-wide shadow-md animate-bounce pointer-events-none z-30">
                       В папку
                     </div>
                   )}
 
-                  {/* 2x2 Launchpad Folder Icon */}
-                  <div className={`w-14 h-14 rounded-2xl p-1.5 grid grid-cols-2 gap-1.5 items-center justify-center mb-2.5 shadow-inner backdrop-blur-md transition-all ${
-                    isFolderDropTarget ? 'bg-indigo-500/20 border-indigo-300' : 'bg-white/[0.07] border border-white/[0.12]'
+                  {/* 2x2 Folder Thumbnail */}
+                  <div className={`w-14 h-14 rounded-2xl p-1.5 grid grid-cols-2 gap-1.5 items-center justify-center mb-3 shadow-inner transition-all ${
+                    isFolderDropTarget ? 'bg-[#004a77] border-2 border-[#a8c7fa]' : 'bg-[#292c35]'
                   }`}>
                     {previewTabs.length > 0 ? (
                       previewTabs.map((t) => {
                         const domain = getDomain(t.url);
                         return (
-                          <div key={t.id} className="w-5 h-5 rounded-md bg-white/[0.08] flex items-center justify-center overflow-hidden pointer-events-none">
+                          <div key={t.id} className="w-5 h-5 rounded-lg bg-[#383d49] flex items-center justify-center overflow-hidden pointer-events-none">
                             <img
                               src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
                               alt=""
@@ -539,8 +521,8 @@ export default function Newtab() {
                         );
                       })
                     ) : (
-                      <div className="col-span-2 row-span-2 flex items-center justify-center text-neutral-500 pointer-events-none">
-                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <div className="col-span-2 row-span-2 flex items-center justify-center text-[#a8c7fa] pointer-events-none">
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                         </svg>
                       </div>
@@ -548,17 +530,17 @@ export default function Newtab() {
                   </div>
 
                   {/* Folder Title & Count */}
-                  <span className="text-sm font-medium text-neutral-200 group-hover:text-white truncate w-full text-center px-1 pointer-events-none">
+                  <span className="text-sm font-medium text-[#e2e2e9] group-hover:text-white truncate w-full text-center px-1 pointer-events-none">
                     {item.title}
                   </span>
-                  <span className="text-[11px] text-neutral-500 font-normal mt-0.5 pointer-events-none">
+                  <span className="text-xs text-[#8e9199] font-normal mt-0.5 pointer-events-none">
                     {item.tabs.length} {item.tabs.length === 1 ? 'вкладка' : item.tabs.length >= 2 && item.tabs.length <= 4 ? 'вкладки' : 'вкладок'}
                   </span>
                 </div>
               );
             }
 
-            // STANDALONE TAB TILE
+            // MATERIAL 3 TAB TILE
             const domain = getDomain(item.url);
             const hasFaviconError = failedFavicons[item.id];
 
@@ -571,28 +553,28 @@ export default function Newtab() {
                 onDragOver={(e) => handleRootCardDragOver(e, index)}
                 onDrop={(e) => handleRootCardDrop(e, index)}
                 onClick={() => handleOpenUrl(item.url)}
-                className={`macos-tile group relative flex flex-col items-center justify-center p-4 rounded-3xl cursor-pointer shadow-lg select-none ${
-                  isBeingDragged ? 'macos-tile-dragging' : ''
+                className={`md-card group relative flex flex-col items-center justify-center p-5 rounded-[24px] cursor-pointer select-none border border-transparent ${
+                  isBeingDragged ? 'md-card-dragging' : ''
                 } ${
                   isReorderTarget
-                    ? 'border-2 border-dashed border-indigo-400/80 bg-indigo-500/10 scale-102'
-                    : 'bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.08] hover:border-white/[0.18]'
-                } backdrop-blur-xl`}
+                    ? 'border-2 border-dashed border-[#a8c7fa] bg-[#1d2026] scale-102'
+                    : 'border-[#33363f]/50'
+                }`}
               >
-                {/* Delete button (folder icon button removed as requested) */}
-                <div className="absolute top-2.5 right-2.5 flex items-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                {/* Delete button */}
+                <div className="absolute top-3 right-3 flex items-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
                   <button
                     type="button"
                     onClick={(e) => handleDeleteRootItem(item.id, e)}
                     title="Удалить вкладку"
-                    className="w-6 h-6 rounded-full bg-neutral-800/90 text-neutral-400 hover:text-white hover:bg-rose-600 transition-colors flex items-center justify-center text-xs shadow cursor-pointer"
+                    className="w-7 h-7 rounded-full bg-[#2a2e37] text-[#c4c7c5] hover:text-[#ffdad6] hover:bg-[#ba1a1a] transition-all flex items-center justify-center text-xs shadow-md cursor-pointer"
                   >
                     ✕
                   </button>
                 </div>
 
                 {/* Favicon Container */}
-                <div className="w-14 h-14 rounded-2xl bg-white/[0.08] border border-white/[0.1] flex items-center justify-center mb-2.5 overflow-hidden shadow-inner backdrop-blur-md pointer-events-none">
+                <div className="w-14 h-14 rounded-2xl bg-[#282c36] flex items-center justify-center mb-3 overflow-hidden shadow-inner pointer-events-none">
                   {!hasFaviconError ? (
                     <img
                       src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
@@ -601,31 +583,31 @@ export default function Newtab() {
                       onError={() => handleFaviconError(item.id)}
                     />
                   ) : (
-                    <span className="text-xl font-medium text-neutral-200">
+                    <span className="text-xl font-medium text-[#a8c7fa]">
                       {item.title.charAt(0).toUpperCase()}
                     </span>
                   )}
                 </div>
 
                 {/* Title & Domain */}
-                <span className="text-sm font-medium text-neutral-200 group-hover:text-white truncate w-full text-center px-1 pointer-events-none">
+                <span className="text-sm font-medium text-[#e2e2e9] group-hover:text-white truncate w-full text-center px-1 pointer-events-none">
                   {item.title}
                 </span>
-                <span className="text-[11px] text-neutral-500 font-normal mt-0.5 truncate max-w-full px-1 pointer-events-none">
+                <span className="text-xs text-[#8e9199] font-normal mt-0.5 truncate max-w-full px-1 pointer-events-none">
                   {domain}
                 </span>
               </div>
             );
           })}
 
-          {/* "+ Добавить" Tile */}
+          {/* "+ Добавить" Outlined Tile */}
           <button
             type="button"
             onClick={() => openAddTabModal(null)}
-            className="macos-tile flex flex-col items-center justify-center p-4 rounded-3xl border-2 border-dashed border-white/[0.1] hover:border-white/[0.25] hover:bg-white/[0.03] text-neutral-400 hover:text-white transition-all duration-200 cursor-pointer min-h-[140px] group"
+            className="flex flex-col items-center justify-center p-5 rounded-[24px] border-2 border-dashed border-[#44474f] hover:border-[#a8c7fa] hover:bg-[#1d2026] text-[#8e9199] hover:text-[#a8c7fa] transition-all duration-200 cursor-pointer min-h-[148px] group"
           >
-            <div className="w-14 h-14 rounded-2xl bg-white/[0.04] group-hover:bg-white/[0.08] flex items-center justify-center mb-2.5 transition-colors">
-              <span className="text-2xl font-light leading-none">+</span>
+            <div className="w-14 h-14 rounded-2xl bg-[#242730] group-hover:bg-[#2d323e] flex items-center justify-center mb-3 transition-colors text-xl font-light">
+              +
             </div>
             <span className="text-sm font-medium">Добавить</span>
           </button>
@@ -633,7 +615,7 @@ export default function Newtab() {
       </main>
 
       {/* ========================================================================= */}
-      {/* macOS FOLDER POPUP (Launchpad style expansion with DnD support) */}
+      {/* MATERIAL 3 FOLDER DIALOG */}
       {/* ========================================================================= */}
       {activeFolder && (
         <div
@@ -645,20 +627,20 @@ export default function Newtab() {
           }}
           onDragLeave={() => setIsDragOverBackdrop(false)}
           onDrop={handleBackdropDrop}
-          className="fixed inset-0 bg-black/60 backdrop-blur-2xl flex items-center justify-center p-6 z-50 animate-macos-backdrop"
+          className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50 animate-md-scrim"
           onClick={() => {
             setActiveFolderId(null);
             setIsEditingFolderTitle(false);
           }}
         >
-          {/* Visual prompt when dragging tab over backdrop to extract from folder */}
+          {/* Visual prompt when dragging tab out of folder */}
           {draggedItem?.source === 'folder' && (
-            <div className={`fixed top-8 px-5 py-2.5 rounded-2xl transition-all pointer-events-none z-60 ${
+            <div className={`fixed top-8 px-6 py-3 rounded-full transition-all pointer-events-none z-60 ${
               isDragOverBackdrop
-                ? 'bg-indigo-600 text-white shadow-xl scale-105 ring-2 ring-indigo-400'
-                : 'bg-white/10 text-neutral-300 backdrop-blur-md'
+                ? 'bg-[#a8c7fa] text-[#062e6f] font-semibold shadow-xl scale-105'
+                : 'bg-[#1f232c] text-[#c2e7ff] border border-[#a8c7fa]/30 shadow-lg'
             }`}>
-              <span className="text-xs font-semibold">
+              <span className="text-sm">
                 {isDragOverBackdrop ? 'Отпустите, чтобы вынести на главный экран' : 'Перетащите сюда, чтобы вынести на главный экран'}
               </span>
             </div>
@@ -666,25 +648,17 @@ export default function Newtab() {
 
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl macos-glass rounded-[28px] p-6 sm:p-8 shadow-2xl animate-macos-modal relative"
+            className="w-full max-w-2xl md-dialog rounded-[28px] p-6 sm:p-8 animate-md-dialog relative"
           >
-            {/* Window Title Bar */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/[0.08]">
-              {/* Traffic Light Close Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveFolderId(null);
-                  setIsEditingFolderTitle(false);
-                }}
-                className="w-7 h-7 rounded-full bg-white/[0.08] hover:bg-rose-500/80 hover:text-white text-neutral-400 flex items-center justify-center text-xs transition-colors cursor-pointer"
-                title="Закрыть (Esc)"
-              >
-                ✕
-              </button>
+            {/* Folder Header */}
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#33363f]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#2e3340] text-[#a8c7fa] flex items-center justify-center">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                </div>
 
-              {/* Editable Folder Title */}
-              <div className="flex items-center gap-2">
                 {isEditingFolderTitle ? (
                   <div className="flex items-center gap-2">
                     <input
@@ -696,12 +670,12 @@ export default function Newtab() {
                         if (e.key === 'Escape') setIsEditingFolderTitle(false);
                       }}
                       autoFocus
-                      className="px-3 py-1 rounded-xl bg-white/[0.1] border border-white/[0.2] text-white text-base font-semibold focus:outline-none"
+                      className="px-3 py-1 rounded-lg bg-[#191c22] border border-[#a8c7fa] text-white text-lg font-medium focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => handleSaveFoldertitle(activeFolder.id)}
-                      className="px-2.5 py-1 rounded-xl bg-white/20 hover:bg-white/30 text-xs font-medium cursor-pointer"
+                      className="md-btn-primary px-3 py-1 rounded-full text-xs font-semibold cursor-pointer"
                     >
                       Сохранить
                     </button>
@@ -709,7 +683,7 @@ export default function Newtab() {
                 ) : (
                   <h2
                     onClick={() => setIsEditingFolderTitle(true)}
-                    className="text-lg font-semibold text-white tracking-tight cursor-pointer hover:opacity-80 flex items-center gap-2 group"
+                    className="text-xl font-normal text-[#e2e2e9] cursor-pointer hover:text-white flex items-center gap-2 group"
                     title="Нажмите для переименования"
                   >
                     <span>{activeFolder.title}</span>
@@ -718,18 +692,31 @@ export default function Newtab() {
                 )}
               </div>
 
-              {/* Quick Add inside folder */}
-              <button
-                type="button"
-                onClick={() => openAddTabModal(activeFolder.id)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.1] hover:bg-white/[0.18] text-xs font-medium text-white transition-colors cursor-pointer"
-              >
-                <span>+</span>
-                <span>Вкладка</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openAddTabModal(activeFolder.id)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full md-btn-primary text-xs font-semibold cursor-pointer"
+                >
+                  <span>+</span>
+                  <span>Вкладка</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveFolderId(null);
+                    setIsEditingFolderTitle(false);
+                  }}
+                  className="w-10 h-10 rounded-full hover:bg-white/10 text-[#c4c7c5] hover:text-white flex items-center justify-center text-sm transition-colors cursor-pointer"
+                  title="Закрыть (Esc)"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
-            {/* Grid inside Folder (supports reordering & dragging out) */}
+            {/* Grid inside Folder */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-1">
               {activeFolder.tabs.map((tab, idx) => {
                 const domain = getDomain(tab.url);
@@ -746,21 +733,21 @@ export default function Newtab() {
                     onDragOver={(e) => handleFolderTabDragOver(e, idx)}
                     onDrop={(e) => handleFolderTabDrop(e, activeFolder.id, idx)}
                     onClick={() => handleOpenUrl(tab.url)}
-                    className={`macos-tile group relative flex flex-col items-center justify-center p-4 rounded-2xl cursor-pointer ${
-                      isTabBeingDragged ? 'macos-tile-dragging' : ''
+                    className={`md-card group relative flex flex-col items-center justify-center p-4 rounded-[20px] cursor-pointer border border-[#33363f]/30 ${
+                      isTabBeingDragged ? 'md-card-dragging' : ''
                     } ${
                       isReorderTabTarget
-                        ? 'border-2 border-dashed border-indigo-400/80 bg-indigo-500/15'
-                        : 'bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.16]'
+                        ? 'border-2 border-dashed border-[#a8c7fa] bg-[#2a2e38]'
+                        : ''
                     }`}
                   >
-                    {/* Actions: Move to root (↗) & Delete (✕) */}
+                    {/* Action buttons */}
                     <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                       <button
                         type="button"
                         onClick={(e) => handleMoveTabToRoot(activeFolder.id, tab, e)}
                         title="Вынести из папки"
-                        className="w-5 h-5 rounded-full bg-neutral-800 text-neutral-400 hover:text-white hover:bg-indigo-600 transition-colors flex items-center justify-center text-[10px] cursor-pointer"
+                        className="w-6 h-6 rounded-full bg-[#2a2e37] text-[#c4c7c5] hover:text-white hover:bg-[#004a77] transition-colors flex items-center justify-center text-[10px] cursor-pointer"
                       >
                         ↗
                       </button>
@@ -768,14 +755,14 @@ export default function Newtab() {
                         type="button"
                         onClick={(e) => handleDeleteTabFromFolder(activeFolder.id, tab.id, e)}
                         title="Удалить"
-                        className="w-5 h-5 rounded-full bg-neutral-800 text-neutral-400 hover:text-white hover:bg-rose-600 transition-colors flex items-center justify-center text-[10px] cursor-pointer"
+                        className="w-6 h-6 rounded-full bg-[#2a2e37] text-[#c4c7c5] hover:text-[#ffdad6] hover:bg-[#ba1a1a] transition-colors flex items-center justify-center text-[10px] cursor-pointer"
                       >
                         ✕
                       </button>
                     </div>
 
                     {/* Icon */}
-                    <div className="w-12 h-12 rounded-2xl bg-white/[0.06] border border-white/[0.1] flex items-center justify-center mb-2 overflow-hidden shadow-inner pointer-events-none">
+                    <div className="w-12 h-12 rounded-xl bg-[#282c36] flex items-center justify-center mb-2 overflow-hidden shadow-inner pointer-events-none">
                       {!hasFaviconError ? (
                         <img
                           src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
@@ -784,17 +771,17 @@ export default function Newtab() {
                           onError={() => handleFaviconError(tab.id)}
                         />
                       ) : (
-                        <span className="text-base font-medium text-neutral-200">
+                        <span className="text-base font-medium text-[#a8c7fa]">
                           {tab.title.charAt(0).toUpperCase()}
                         </span>
                       )}
                     </div>
 
                     {/* Title & Domain */}
-                    <span className="text-xs font-medium text-neutral-200 group-hover:text-white truncate w-full text-center px-1 pointer-events-none">
+                    <span className="text-xs font-medium text-[#e2e2e9] group-hover:text-white truncate w-full text-center px-1 pointer-events-none">
                       {tab.title}
                     </span>
-                    <span className="text-[10px] text-neutral-500 truncate max-w-full px-1 pointer-events-none">
+                    <span className="text-[10px] text-[#8e9199] truncate max-w-full px-1 pointer-events-none">
                       {domain}
                     </span>
                   </div>
@@ -805,10 +792,10 @@ export default function Newtab() {
               <button
                 type="button"
                 onClick={() => openAddTabModal(activeFolder.id)}
-                className="macos-tile flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-white/[0.1] hover:border-white/[0.2] hover:bg-white/[0.03] text-neutral-400 hover:text-white transition-all duration-200 cursor-pointer min-h-[110px] group"
+                className="flex flex-col items-center justify-center p-4 rounded-[20px] border-2 border-dashed border-[#44474f] hover:border-[#a8c7fa] hover:bg-[#1d2026] text-[#8e9199] hover:text-[#a8c7fa] transition-all duration-200 cursor-pointer min-h-[110px] group"
               >
-                <div className="w-10 h-10 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] flex items-center justify-center mb-2 transition-colors">
-                  <span className="text-xl font-light leading-none">+</span>
+                <div className="w-10 h-10 rounded-xl bg-[#242730] group-hover:bg-[#2d323e] flex items-center justify-center mb-2 transition-colors text-lg font-light">
+                  +
                 </div>
                 <span className="text-xs font-medium">Добавить</span>
               </button>
@@ -818,33 +805,24 @@ export default function Newtab() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: ADD TAB */}
+      {/* MATERIAL 3 DIALOG: ADD TAB */}
       {/* ========================================================================= */}
       {modalMode === 'add_tab' && (
         <div
-          className="fixed inset-0 bg-black/65 backdrop-blur-xl flex items-center justify-center p-4 z-50 animate-macos-backdrop"
+          className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-md-scrim"
           onClick={() => setModalMode('none')}
         >
           <div
-            className="macos-glass rounded-[24px] p-6 max-w-sm w-full shadow-2xl space-y-4 animate-macos-modal"
+            className="md-dialog rounded-[28px] p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4 animate-md-dialog"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
-              <h2 className="text-base font-semibold text-white tracking-tight">
-                {targetFolderIdForNewTab ? 'Добавить вкладку в папку' : 'Новая вкладка'}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setModalMode('none')}
-                className="text-neutral-400 hover:text-white text-xs cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
+            <h2 className="text-xl font-normal text-[#e2e2e9]">
+              {targetFolderIdForNewTab ? 'Добавить вкладку в папку' : 'Новая вкладка'}
+            </h2>
 
-            <form onSubmit={handleAddTabSubmit} className="space-y-3.5">
+            <form onSubmit={handleAddTabSubmit} className="space-y-4 pt-1">
               <div>
-                <label className="block text-xs font-medium text-neutral-400 mb-1">
+                <label className="block text-xs font-medium text-[#c4c7c5] mb-1.5">
                   URL адрес *
                 </label>
                 <input
@@ -854,12 +832,12 @@ export default function Newtab() {
                   placeholder="github.com или https://..."
                   required
                   autoFocus
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-[#181a20] border border-[#44474f] focus:border-[#a8c7fa] focus:ring-1 focus:ring-[#a8c7fa] text-white placeholder-[#8e9199] text-sm outline-none transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-neutral-400 mb-1">
+                <label className="block text-xs font-medium text-[#c4c7c5] mb-1.5">
                   Название (необязательно)
                 </label>
                 <input
@@ -867,20 +845,19 @@ export default function Newtab() {
                   value={newTabTitle}
                   onChange={(e) => setNewTabTitle(e.target.value)}
                   placeholder="Например: GitHub"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-[#181a20] border border-[#44474f] focus:border-[#a8c7fa] focus:ring-1 focus:ring-[#a8c7fa] text-white placeholder-[#8e9199] text-sm outline-none transition-colors"
                 />
               </div>
 
-              {/* Optional folder selector if creating from root */}
               {!targetFolderIdForNewTab && foldersList.length > 0 && (
                 <div>
-                  <label className="block text-xs font-medium text-neutral-400 mb-1">
+                  <label className="block text-xs font-medium text-[#c4c7c5] mb-1.5">
                     Поместить в папку (необязательно)
                   </label>
                   <select
                     value={targetFolderIdForNewTab || ''}
                     onChange={(e) => setTargetFolderIdForNewTab(e.target.value || null)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#1e2028] border border-white/[0.12] text-white text-sm focus:outline-none focus:border-white/30 cursor-pointer"
+                    className="w-full px-4 py-3 rounded-xl bg-[#181a20] border border-[#44474f] focus:border-[#a8c7fa] text-white text-sm outline-none cursor-pointer"
                   >
                     <option value="">На главный экран (без папки)</option>
                     {foldersList.map((f) => (
@@ -892,17 +869,17 @@ export default function Newtab() {
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-3">
                 <button
                   type="button"
                   onClick={() => setModalMode('none')}
-                  className="px-4 py-2 rounded-xl text-xs font-medium text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                  className="md-btn-text px-5 py-2.5 rounded-full text-sm font-medium cursor-pointer"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-white text-black hover:bg-neutral-200 transition-all shadow-md active:scale-95 cursor-pointer"
+                  className="md-btn-primary px-6 py-2.5 rounded-full text-sm font-semibold shadow cursor-pointer"
                 >
                   Добавить
                 </button>
@@ -913,32 +890,23 @@ export default function Newtab() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: ADD FOLDER */}
+      {/* MATERIAL 3 DIALOG: ADD FOLDER */}
       {/* ========================================================================= */}
       {modalMode === 'add_folder' && (
         <div
-          className="fixed inset-0 bg-black/65 backdrop-blur-xl flex items-center justify-center p-4 z-50 animate-macos-backdrop"
+          className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-md-scrim"
           onClick={() => setModalMode('none')}
         >
           <div
-            className="macos-glass rounded-[24px] p-6 max-w-sm w-full shadow-2xl space-y-4 animate-macos-modal"
+            className="md-dialog rounded-[28px] p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4 animate-md-dialog"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
-              <h2 className="text-base font-semibold text-white tracking-tight">Новая папка</h2>
-              <button
-                type="button"
-                onClick={() => setModalMode('none')}
-                className="text-neutral-400 hover:text-white text-xs cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
+            <h2 className="text-xl font-normal text-[#e2e2e9]">Новая папка</h2>
 
-            <form onSubmit={handleAddFolderSubmit} className="space-y-3.5">
+            <form onSubmit={handleAddFolderSubmit} className="space-y-4 pt-1">
               <div>
-                <label className="block text-xs font-medium text-neutral-400 mb-1">
-                  Название папки
+                <label className="block text-xs font-medium text-[#c4c7c5] mb-1.5">
+                  Название папки *
                 </label>
                 <input
                   type="text"
@@ -947,21 +915,21 @@ export default function Newtab() {
                   placeholder="Например: Работа, Медиа, Разработка"
                   required
                   autoFocus
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-[#181a20] border border-[#44474f] focus:border-[#a8c7fa] focus:ring-1 focus:ring-[#a8c7fa] text-white placeholder-[#8e9199] text-sm outline-none transition-colors"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-3">
                 <button
                   type="button"
                   onClick={() => setModalMode('none')}
-                  className="px-4 py-2 rounded-xl text-xs font-medium text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                  className="md-btn-text px-5 py-2.5 rounded-full text-sm font-medium cursor-pointer"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-white text-black hover:bg-neutral-200 transition-all shadow-md active:scale-95 cursor-pointer"
+                  className="md-btn-primary px-6 py-2.5 rounded-full text-sm font-semibold shadow cursor-pointer"
                 >
                   Создать
                 </button>
