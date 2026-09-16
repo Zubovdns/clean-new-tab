@@ -32,12 +32,25 @@
   }
 }
 
+@keyframes folderBounceGlow {
+  0%, 100% {
+    transform: scale(1.08);
+  }
+  50% {
+    transform: scale(1.13);
+  }
+}
+
 .animate-macos-modal {
   animation: macosModalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-macos-backdrop {
   animation: macosBackdropIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-folder-drop {
+  animation: folderBounceGlow 0.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
 
 .macos-glass {
@@ -63,4 +76,10 @@
 
 .macos-tile:active {
   transform: scale(0.96);
+}
+
+.macos-tile-dragging {
+  opacity: 0.3;
+  transform: scale(0.95);
+  cursor: grabbing !important;
 }

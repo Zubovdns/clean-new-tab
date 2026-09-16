@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getStorageItem, setStorageItem } from '@utils/storage';
 
 export interface TabItem {
@@ -19,6 +19,14 @@ export interface StandaloneTabItem extends TabItem {
 }
 
 export type DashboardItem = FolderItem | StandaloneTabItem;
+
+interface DraggedItemState {
+  source: 'root' | 'folder';
+  id: string;
+  itemType: 'tab' | 'folder';
+  folderId?: string;
+  index: number;
+}
 
 const STORAGE_KEY = 'brave_user_dashboard_items_v2';
 
@@ -70,15 +78,21 @@ export default function Newtab() {
   const [newTabTitle, setNewTabTitle] = useState('');
   const [newFolderTitle, setNewFolderTitle] = useState('');
 
-  // Move tab to folder state
-  const [movingTabId, setMovingTabId] = useState<string | null>(null);
-
   // Favicon errors cache
   const [failedFavicons, setFailedFavicons] = useState<Record<string, boolean>>({});
 
+  // Drag and Drop state
+  const [draggedItem, setDraggedItem] = useState<DraggedItemState | null>(null);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  const [dragOverRootIndex, setDragOverRootIndex] = useState<number | null>(null);
+  const [dragOverFolderTabIndex, setDragOverFolderTabIndex] = useState<number | null>(null);
+  const [isDragOverBackdrop, setIsDragOverBackdrop] = useState(false);
+
+  // Ref to prevent click navigation when dragging ends
+  const isDraggingRef = useRef(false);
+
   useEffect(() => {
     getStorageItem<DashboardItem[]>(STORAGE_KEY, DEFAULT_ITEMS).then((loaded) => {
-      // Normalize loaded items if coming from older schema
       const normalized = (loaded || []).map((item) => {
         if (!('type' in item)) {
           return { ...(item as TabItem), type: 'tab' } as StandaloneTabItem;
@@ -90,7 +104,7 @@ export default function Newtab() {
     });
   }, []);
 
-  // Handle ESC key to close open folder or modal
+  // ESC key handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -99,14 +113,12 @@ export default function Newtab() {
         } else if (activeFolderId) {
           setActiveFolderId(null);
           setIsEditingFolderTitle(false);
-        } else if (movingTabId) {
-          setMovingTabId(null);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [modalMode, activeFolderId, movingTabId]);
+  }, [modalMode, activeFolderId]);
 
   const saveItems = (newItems: DashboardItem[]) => {
     setItems(newItems);
@@ -114,7 +126,14 @@ export default function Newtab() {
   };
 
   const handleOpenUrl = (url: string) => {
+    if (isDraggingRef.current) return;
     window.location.href = normalizeUrl(url);
+  };
+
+  const handleFolderClick = (folderId: string, folderTitle: string) => {
+    if (isDraggingRef.current) return;
+    setActiveFolderId(folderId);
+    setFolderTitleInput(folderTitle);
   };
 
   const handleFaviconError = (id: string) => {
@@ -151,7 +170,6 @@ export default function Newtab() {
     };
 
     if (targetFolderIdForNewTab) {
-      // Add tab inside the selected folder
       const updated = items.map((item) => {
         if (item.id === targetFolderIdForNewTab && item.type === 'folder') {
           return { ...item, tabs: [...item.tabs, newTab] };
@@ -160,7 +178,6 @@ export default function Newtab() {
       });
       saveItems(updated);
     } else {
-      // Add tab to root level
       const updated: DashboardItem[] = [...items, { ...newTab, type: 'tab' }];
       saveItems(updated);
     }
@@ -208,8 +225,8 @@ export default function Newtab() {
   };
 
   // Move tab from folder to root
-  const handleMoveTabToRoot = (folderId: string, tab: TabItem, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleMoveTabToRoot = (folderId: string, tab: TabItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     const updatedFolderItems = items.map((item) => {
       if (item.id === folderId && item.type === 'folder') {
         return {
@@ -221,25 +238,6 @@ export default function Newtab() {
     });
     const updated: DashboardItem[] = [...updatedFolderItems, { ...tab, type: 'tab' }];
     saveItems(updated);
-  };
-
-  // Move root tab into a selected folder
-  const handleMoveTabIntoFolder = (tabId: string, destinationFolderId: string) => {
-    const tabToMove = items.find((item) => item.id === tabId && item.type === 'tab') as StandaloneTabItem | undefined;
-    if (!tabToMove) return;
-
-    const remainingItems = items.filter((item) => item.id !== tabId);
-    const updated = remainingItems.map((item) => {
-      if (item.id === destinationFolderId && item.type === 'folder') {
-        return {
-          ...item,
-          tabs: [...item.tabs, { id: tabToMove.id, title: tabToMove.title, url: tabToMove.url }],
-        };
-      }
-      return item;
-    });
-    saveItems(updated);
-    setMovingTabId(null);
   };
 
   // Rename folder
@@ -255,6 +253,190 @@ export default function Newtab() {
       saveItems(updated);
     }
     setIsEditingFolderTitle(false);
+  };
+
+  // =========================================================================
+  // DRAG AND DROP HANDLERS
+  // =========================================================================
+
+  const handleRootDragStart = (e: React.DragEvent, item: DashboardItem, index: number) => {
+    isDraggingRef.current = true;
+    const dragData: DraggedItemState = {
+      source: 'root',
+      id: item.id,
+      itemType: item.type,
+      index,
+    };
+    setDraggedItem(dragData);
+    e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleFolderTabDragStart = (e: React.DragEvent, tab: TabItem, folderId: string, index: number) => {
+    isDraggingRef.current = true;
+    const dragData: DraggedItemState = {
+      source: 'folder',
+      id: tab.id,
+      itemType: 'tab',
+      folderId,
+      index,
+    };
+    setDraggedItem(dragData);
+    e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDragOverFolderId(null);
+    setDragOverRootIndex(null);
+    setDragOverFolderTabIndex(null);
+    setIsDragOverBackdrop(false);
+    // Slight delay to prevent immediate click trigger
+    setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 60);
+  };
+
+  // Drag over a folder card (on root grid)
+  const handleFolderCardDragOver = (e: React.DragEvent, folderId: string) => {
+    if (!draggedItem) return;
+    // Don't allow dropping a folder into itself
+    if (draggedItem.id === folderId) return;
+
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    if (dragOverFolderId !== folderId) {
+      setDragOverFolderId(folderId);
+    }
+  };
+
+  const handleFolderCardDragLeave = (e: React.DragEvent, folderId: string) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      if (dragOverFolderId === folderId) {
+        setDragOverFolderId(null);
+      }
+    }
+  };
+
+  // Drop onto a folder (moves tab into folder)
+  const handleDropOnFolder = (e: React.DragEvent, targetFolderId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedItem) return;
+
+    // Only tabs can be moved into a folder
+    if (draggedItem.itemType === 'tab' && draggedItem.id !== targetFolderId) {
+      if (draggedItem.source === 'root') {
+        const tabToMove = items.find((it) => it.id === draggedItem.id && it.type === 'tab') as StandaloneTabItem | undefined;
+        if (!tabToMove) return;
+
+        const filtered = items.filter((it) => it.id !== draggedItem.id);
+        const updated = filtered.map((it) => {
+          if (it.id === targetFolderId && it.type === 'folder') {
+            return {
+              ...it,
+              tabs: [...it.tabs, { id: tabToMove.id, title: tabToMove.title, url: tabToMove.url }],
+            };
+          }
+          return it;
+        });
+        saveItems(updated);
+      } else if (draggedItem.source === 'folder' && draggedItem.folderId && draggedItem.folderId !== targetFolderId) {
+        // Move from one folder to another folder
+        const sourceFolder = items.find((it) => it.id === draggedItem.folderId && it.type === 'folder') as FolderItem | undefined;
+        const tabToMove = sourceFolder?.tabs.find((t) => t.id === draggedItem.id);
+        if (!tabToMove) return;
+
+        const updated = items.map((it) => {
+          if (it.id === draggedItem.folderId && it.type === 'folder') {
+            return { ...it, tabs: it.tabs.filter((t) => t.id !== draggedItem.id) };
+          }
+          if (it.id === targetFolderId && it.type === 'folder') {
+            return { ...it, tabs: [...it.tabs, tabToMove] };
+          }
+          return it;
+        });
+        saveItems(updated);
+      }
+    }
+
+    handleDragEnd();
+  };
+
+  // Reorder on root grid
+  const handleRootCardDragOver = (e: React.DragEvent, index: number) => {
+    if (!draggedItem || draggedItem.source !== 'root') return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverRootIndex !== index) {
+      setDragOverRootIndex(index);
+    }
+  };
+
+  const handleRootCardDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedItem || draggedItem.source !== 'root') return;
+    const sourceIndex = draggedItem.index;
+
+    if (sourceIndex !== targetIndex) {
+      const newItems = [...items];
+      const [movedItem] = newItems.splice(sourceIndex, 1);
+      newItems.splice(targetIndex, 0, movedItem);
+      saveItems(newItems);
+    }
+
+    handleDragEnd();
+  };
+
+  // Reorder inside folder
+  const handleFolderTabDragOver = (e: React.DragEvent, index: number) => {
+    if (!draggedItem || draggedItem.source !== 'folder') return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverFolderTabIndex !== index) {
+      setDragOverFolderTabIndex(index);
+    }
+  };
+
+  const handleFolderTabDrop = (e: React.DragEvent, folderId: string, targetIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedItem || draggedItem.source !== 'folder' || draggedItem.folderId !== folderId) return;
+    const sourceIndex = draggedItem.index;
+
+    if (sourceIndex !== targetIndex) {
+      const updated = items.map((it) => {
+        if (it.id === folderId && it.type === 'folder') {
+          const newTabs = [...it.tabs];
+          const [movedTab] = newTabs.splice(sourceIndex, 1);
+          newTabs.splice(targetIndex, 0, movedTab);
+          return { ...it, tabs: newTabs };
+        }
+        return it;
+      });
+      saveItems(updated);
+    }
+
+    handleDragEnd();
+  };
+
+  // Drop onto backdrop when dragging from inside folder (moves tab out to root)
+  const handleBackdropDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (draggedItem && draggedItem.source === 'folder' && draggedItem.folderId) {
+      const folder = items.find((it) => it.id === draggedItem.folderId && it.type === 'folder') as FolderItem | undefined;
+      const tabToMove = folder?.tabs.find((t) => t.id === draggedItem.id);
+      if (tabToMove) {
+        handleMoveTabToRoot(draggedItem.folderId, tabToMove);
+      }
+    }
+    handleDragEnd();
   };
 
   const activeFolder = items.find((item) => item.id === activeFolderId && item.type === 'folder') as FolderItem | undefined;
@@ -289,22 +471,37 @@ export default function Newtab() {
         </button>
       </div>
 
-      {/* Main Grid: Launchpad style */}
+      {/* Main Grid: Launchpad style with DnD */}
       <main className="w-full max-w-4xl py-12">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 sm:gap-6">
-          {items.map((item) => {
+          {items.map((item, index) => {
+            const isBeingDragged = draggedItem?.id === item.id;
+            const isFolderDropTarget = dragOverFolderId === item.id;
+            const isReorderTarget = dragOverRootIndex === index && draggedItem?.id !== item.id && !isFolderDropTarget;
+
             if (item.type === 'folder') {
-              // Folder Tile (macOS Launchpad folder squircle with 2x2 preview)
+              // FOLDER TILE
               const previewTabs = item.tabs.slice(0, 4);
 
               return (
                 <div
                   key={item.id}
-                  onClick={() => {
-                    setActiveFolderId(item.id);
-                    setFolderTitleInput(item.title);
-                  }}
-                  className="macos-tile group relative flex flex-col items-center justify-center p-4 rounded-3xl bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.08] hover:border-white/[0.18] backdrop-blur-xl shadow-lg cursor-pointer"
+                  draggable={true}
+                  onDragStart={(e) => handleRootDragStart(e, item, index)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => handleFolderCardDragOver(e, item.id)}
+                  onDragLeave={(e) => handleFolderCardDragLeave(e, item.id)}
+                  onDrop={(e) => handleDropOnFolder(e, item.id)}
+                  onClick={() => handleFolderClick(item.id, item.title)}
+                  className={`macos-tile group relative flex flex-col items-center justify-center p-4 rounded-3xl cursor-pointer shadow-lg select-none ${
+                    isBeingDragged ? 'macos-tile-dragging' : ''
+                  } ${
+                    isFolderDropTarget
+                      ? 'animate-folder-drop bg-indigo-600/30 border-2 border-indigo-400 ring-4 ring-indigo-500/40 shadow-[0_0_35px_rgba(99,102,241,0.5)] z-20'
+                      : isReorderTarget
+                      ? 'border-2 border-dashed border-white/40 bg-white/[0.08]'
+                      : 'bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.08] hover:border-white/[0.18]'
+                  } backdrop-blur-xl`}
                 >
                   {/* Delete folder button */}
                   <button
@@ -316,13 +513,22 @@ export default function Newtab() {
                     ✕
                   </button>
 
+                  {/* Drop inside folder indicator badge */}
+                  {isFolderDropTarget && (
+                    <div className="absolute -top-3.5 px-2.5 py-0.5 rounded-full bg-indigo-500 text-white text-[10px] font-semibold tracking-wide shadow-lg animate-bounce pointer-events-none z-30">
+                      В папку
+                    </div>
+                  )}
+
                   {/* 2x2 Launchpad Folder Icon */}
-                  <div className="w-14 h-14 rounded-2xl bg-white/[0.07] border border-white/[0.12] p-1.5 grid grid-cols-2 gap-1.5 items-center justify-center mb-2.5 shadow-inner backdrop-blur-md">
+                  <div className={`w-14 h-14 rounded-2xl p-1.5 grid grid-cols-2 gap-1.5 items-center justify-center mb-2.5 shadow-inner backdrop-blur-md transition-all ${
+                    isFolderDropTarget ? 'bg-indigo-500/20 border-indigo-300' : 'bg-white/[0.07] border border-white/[0.12]'
+                  }`}>
                     {previewTabs.length > 0 ? (
                       previewTabs.map((t) => {
                         const domain = getDomain(t.url);
                         return (
-                          <div key={t.id} className="w-5 h-5 rounded-md bg-white/[0.08] flex items-center justify-center overflow-hidden">
+                          <div key={t.id} className="w-5 h-5 rounded-md bg-white/[0.08] flex items-center justify-center overflow-hidden pointer-events-none">
                             <img
                               src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
                               alt=""
@@ -333,7 +539,7 @@ export default function Newtab() {
                         );
                       })
                     ) : (
-                      <div className="col-span-2 row-span-2 flex items-center justify-center text-neutral-500">
+                      <div className="col-span-2 row-span-2 flex items-center justify-center text-neutral-500 pointer-events-none">
                         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                         </svg>
@@ -342,76 +548,51 @@ export default function Newtab() {
                   </div>
 
                   {/* Folder Title & Count */}
-                  <span className="text-sm font-medium text-neutral-200 group-hover:text-white truncate w-full text-center px-1">
+                  <span className="text-sm font-medium text-neutral-200 group-hover:text-white truncate w-full text-center px-1 pointer-events-none">
                     {item.title}
                   </span>
-                  <span className="text-[11px] text-neutral-500 font-normal mt-0.5">
+                  <span className="text-[11px] text-neutral-500 font-normal mt-0.5 pointer-events-none">
                     {item.tabs.length} {item.tabs.length === 1 ? 'вкладка' : item.tabs.length >= 2 && item.tabs.length <= 4 ? 'вкладки' : 'вкладок'}
                   </span>
                 </div>
               );
             }
 
-            // Standalone Tab Tile
+            // STANDALONE TAB TILE
             const domain = getDomain(item.url);
             const hasFaviconError = failedFavicons[item.id];
 
             return (
               <div
                 key={item.id}
+                draggable={true}
+                onDragStart={(e) => handleRootDragStart(e, item, index)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => handleRootCardDragOver(e, index)}
+                onDrop={(e) => handleRootCardDrop(e, index)}
                 onClick={() => handleOpenUrl(item.url)}
-                className="macos-tile group relative flex flex-col items-center justify-center p-4 rounded-3xl bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.08] hover:border-white/[0.18] backdrop-blur-xl shadow-lg cursor-pointer"
+                className={`macos-tile group relative flex flex-col items-center justify-center p-4 rounded-3xl cursor-pointer shadow-lg select-none ${
+                  isBeingDragged ? 'macos-tile-dragging' : ''
+                } ${
+                  isReorderTarget
+                    ? 'border-2 border-dashed border-indigo-400/80 bg-indigo-500/10 scale-102'
+                    : 'bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.08] hover:border-white/[0.18]'
+                } backdrop-blur-xl`}
               >
-                {/* Actions: Move to folder & Delete */}
-                <div className="absolute top-2.5 right-2.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                  {foldersList.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMovingTabId(movingTabId === item.id ? null : item.id);
-                      }}
-                      title="Переместить в папку"
-                      className="w-6 h-6 rounded-full bg-neutral-800/90 text-neutral-400 hover:text-white hover:bg-indigo-600 transition-colors flex items-center justify-center text-[10px] shadow cursor-pointer"
-                    >
-                      📁
-                    </button>
-                  )}
+                {/* Delete button (folder icon button removed as requested) */}
+                <div className="absolute top-2.5 right-2.5 flex items-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
                   <button
                     type="button"
                     onClick={(e) => handleDeleteRootItem(item.id, e)}
-                    title="Удалить"
+                    title="Удалить вкладку"
                     className="w-6 h-6 rounded-full bg-neutral-800/90 text-neutral-400 hover:text-white hover:bg-rose-600 transition-colors flex items-center justify-center text-xs shadow cursor-pointer"
                   >
                     ✕
                   </button>
                 </div>
 
-                {/* Move Tab Dropdown */}
-                {movingTabId === item.id && (
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    className="absolute top-10 right-2 w-44 rounded-2xl macos-glass p-2 shadow-2xl z-30 animate-macos-modal"
-                  >
-                    <div className="text-[11px] font-semibold text-neutral-400 px-2 py-1 mb-1">
-                      Переместить в:
-                    </div>
-                    {foldersList.map((folder) => (
-                      <button
-                        key={folder.id}
-                        type="button"
-                        onClick={() => handleMoveTabIntoFolder(item.id, folder.id)}
-                        className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-white/10 text-xs text-neutral-200 truncate flex items-center gap-2 transition-colors cursor-pointer"
-                      >
-                        <span>📁</span>
-                        <span className="truncate">{folder.title}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Icon Container */}
-                <div className="w-14 h-14 rounded-2xl bg-white/[0.08] border border-white/[0.1] flex items-center justify-center mb-2.5 overflow-hidden shadow-inner backdrop-blur-md">
+                {/* Favicon Container */}
+                <div className="w-14 h-14 rounded-2xl bg-white/[0.08] border border-white/[0.1] flex items-center justify-center mb-2.5 overflow-hidden shadow-inner backdrop-blur-md pointer-events-none">
                   {!hasFaviconError ? (
                     <img
                       src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
@@ -426,11 +607,11 @@ export default function Newtab() {
                   )}
                 </div>
 
-                {/* Title */}
-                <span className="text-sm font-medium text-neutral-200 group-hover:text-white truncate w-full text-center px-1">
+                {/* Title & Domain */}
+                <span className="text-sm font-medium text-neutral-200 group-hover:text-white truncate w-full text-center px-1 pointer-events-none">
                   {item.title}
                 </span>
-                <span className="text-[11px] text-neutral-500 font-normal mt-0.5 truncate max-w-full px-1">
+                <span className="text-[11px] text-neutral-500 font-normal mt-0.5 truncate max-w-full px-1 pointer-events-none">
                   {domain}
                 </span>
               </div>
@@ -452,21 +633,42 @@ export default function Newtab() {
       </main>
 
       {/* ========================================================================= */}
-      {/* macOS FOLDER POPUP (Launchpad style expansion) */}
+      {/* macOS FOLDER POPUP (Launchpad style expansion with DnD support) */}
       {/* ========================================================================= */}
       {activeFolder && (
         <div
+          onDragOver={(e) => {
+            if (draggedItem?.source === 'folder') {
+              e.preventDefault();
+              setIsDragOverBackdrop(true);
+            }
+          }}
+          onDragLeave={() => setIsDragOverBackdrop(false)}
+          onDrop={handleBackdropDrop}
           className="fixed inset-0 bg-black/60 backdrop-blur-2xl flex items-center justify-center p-6 z-50 animate-macos-backdrop"
           onClick={() => {
             setActiveFolderId(null);
             setIsEditingFolderTitle(false);
           }}
         >
+          {/* Visual prompt when dragging tab over backdrop to extract from folder */}
+          {draggedItem?.source === 'folder' && (
+            <div className={`fixed top-8 px-5 py-2.5 rounded-2xl transition-all pointer-events-none z-60 ${
+              isDragOverBackdrop
+                ? 'bg-indigo-600 text-white shadow-xl scale-105 ring-2 ring-indigo-400'
+                : 'bg-white/10 text-neutral-300 backdrop-blur-md'
+            }`}>
+              <span className="text-xs font-semibold">
+                {isDragOverBackdrop ? 'Отпустите, чтобы вынести на главный экран' : 'Перетащите сюда, чтобы вынести на главный экран'}
+              </span>
+            </div>
+          )}
+
           <div
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-2xl macos-glass rounded-[28px] p-6 sm:p-8 shadow-2xl animate-macos-modal relative"
           >
-            {/* macOS Window Title Bar */}
+            {/* Window Title Bar */}
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/[0.08]">
               {/* Traffic Light Close Button */}
               <button
@@ -527,19 +729,32 @@ export default function Newtab() {
               </button>
             </div>
 
-            {/* Grid inside Folder */}
+            {/* Grid inside Folder (supports reordering & dragging out) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-1">
-              {activeFolder.tabs.map((tab) => {
+              {activeFolder.tabs.map((tab, idx) => {
                 const domain = getDomain(tab.url);
                 const hasFaviconError = failedFavicons[tab.id];
+                const isTabBeingDragged = draggedItem?.id === tab.id;
+                const isReorderTabTarget = dragOverFolderTabIndex === idx && draggedItem?.id !== tab.id;
 
                 return (
                   <div
                     key={tab.id}
+                    draggable={true}
+                    onDragStart={(e) => handleFolderTabDragStart(e, tab, activeFolder.id, idx)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => handleFolderTabDragOver(e, idx)}
+                    onDrop={(e) => handleFolderTabDrop(e, activeFolder.id, idx)}
                     onClick={() => handleOpenUrl(tab.url)}
-                    className="macos-tile group relative flex flex-col items-center justify-center p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.16] cursor-pointer"
+                    className={`macos-tile group relative flex flex-col items-center justify-center p-4 rounded-2xl cursor-pointer ${
+                      isTabBeingDragged ? 'macos-tile-dragging' : ''
+                    } ${
+                      isReorderTabTarget
+                        ? 'border-2 border-dashed border-indigo-400/80 bg-indigo-500/15'
+                        : 'bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.16]'
+                    }`}
                   >
-                    {/* Action buttons on tab */}
+                    {/* Actions: Move to root (↗) & Delete (✕) */}
                     <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                       <button
                         type="button"
@@ -560,7 +775,7 @@ export default function Newtab() {
                     </div>
 
                     {/* Icon */}
-                    <div className="w-12 h-12 rounded-2xl bg-white/[0.06] border border-white/[0.1] flex items-center justify-center mb-2 overflow-hidden shadow-inner">
+                    <div className="w-12 h-12 rounded-2xl bg-white/[0.06] border border-white/[0.1] flex items-center justify-center mb-2 overflow-hidden shadow-inner pointer-events-none">
                       {!hasFaviconError ? (
                         <img
                           src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
@@ -575,11 +790,11 @@ export default function Newtab() {
                       )}
                     </div>
 
-                    {/* Title */}
-                    <span className="text-xs font-medium text-neutral-200 group-hover:text-white truncate w-full text-center px-1">
+                    {/* Title & Domain */}
+                    <span className="text-xs font-medium text-neutral-200 group-hover:text-white truncate w-full text-center px-1 pointer-events-none">
                       {tab.title}
                     </span>
-                    <span className="text-[10px] text-neutral-500 truncate max-w-full px-1">
+                    <span className="text-[10px] text-neutral-500 truncate max-w-full px-1 pointer-events-none">
                       {domain}
                     </span>
                   </div>
@@ -603,7 +818,7 @@ export default function Newtab() {
       )}
 
       {/* ========================================================================= */}
-      {/* macOS MODAL: ADD TAB */}
+      {/* MODAL: ADD TAB */}
       {/* ========================================================================= */}
       {modalMode === 'add_tab' && (
         <div
@@ -698,7 +913,7 @@ export default function Newtab() {
       )}
 
       {/* ========================================================================= */}
-      {/* macOS MODAL: ADD FOLDER */}
+      {/* MODAL: ADD FOLDER */}
       {/* ========================================================================= */}
       {modalMode === 'add_folder' && (
         <div
