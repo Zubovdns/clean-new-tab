@@ -7,28 +7,43 @@ import {
 } from '@app-types';
 import GridItemCard from '@components/grid/GridItemCard';
 import Icon from '@components/common/Icon';
+import DropIndicator from '@components/common/DropIndicator';
 
 export interface SectionCardProps {
   section: ChromeSection;
   sectionIndex: number;
   isDark: boolean;
   isDraggingThisSection: boolean;
-  isSectionDropTarget: boolean;
-  isSectionItemHover: boolean;
+  draggedSectionIndex: number | null;
+  showSectionDropIndicatorBefore: boolean;
+  showSectionDropIndicatorAfter: boolean;
   draggedItemCoords: { sectionId: string; itemIndex: number } | null;
-  dragOverItemCoords: { sectionId: string; itemIndex: number } | null;
+  dragOverItemInfo: { sectionId: string; itemIndex: number; position: 'before' | 'after' } | null;
   dragOverFolderTargetId: string | null;
+  dragOverSectionEndId: string | null;
   onSectionDragStart: (e: React.DragEvent, index: number) => void;
   onSectionDragEnd: () => void;
-  onSectionDragOver: (e: React.DragEvent, index: number) => void;
-  onSectionDrop: (e: React.DragEvent, index: number) => void;
+  onSectionDragOver: (e: React.DragEvent, sectionIndex: number, isBottom: boolean) => void;
+  onSectionDrop: (e: React.DragEvent, sectionIndex: number, isBottom: boolean) => void;
   onSectionBodyDragOver: (e: React.DragEvent, sectionId: string) => void;
   onSectionBodyDrop: (e: React.DragEvent, sectionId: string) => void;
   onItemClick: (item: ChromeGridItem, sectionId: string) => void;
   onItemDragStart: (e: React.DragEvent, sectionId: string, itemIndex: number) => void;
   onItemDragEnd: () => void;
-  onItemDragOver: (e: React.DragEvent, sectionId: string, itemIndex: number, item: ChromeGridItem) => void;
-  onItemDrop: (e: React.DragEvent, sectionId: string, itemIndex: number, item: ChromeGridItem) => void;
+  onItemDragOver: (
+    e: React.DragEvent,
+    sectionId: string,
+    itemIndex: number,
+    item: ChromeGridItem,
+    position: 'before' | 'after' | 'inside'
+  ) => void;
+  onItemDrop: (
+    e: React.DragEvent,
+    sectionId: string,
+    itemIndex: number,
+    item: ChromeGridItem,
+    position: 'before' | 'after' | 'inside'
+  ) => void;
   onOpenAddModal: (sectionId: string, folderId: string | null) => void;
   onStartEditingSection: (sec: ChromeSection) => void;
   onSaveEditingSection: () => void;
@@ -51,11 +66,13 @@ export function SectionCard({
   sectionIndex,
   isDark,
   isDraggingThisSection,
-  isSectionDropTarget,
-  isSectionItemHover,
+  draggedSectionIndex,
+  showSectionDropIndicatorBefore,
+  showSectionDropIndicatorAfter,
   draggedItemCoords,
-  dragOverItemCoords,
+  dragOverItemInfo,
   dragOverFolderTargetId,
+  dragOverSectionEndId,
   onSectionDragStart,
   onSectionDragEnd,
   onSectionDragOver,
@@ -85,33 +102,49 @@ export function SectionCard({
 }: SectionCardProps) {
   const isEditingTitle = editingSectionId === section.id;
   const isSecMenuOpen = activeMenuId === `sec-menu-${section.id}`;
+  const isDraggingSection = draggedSectionIndex !== null;
+  const isDropTargetAtEnd = dragOverSectionEndId === section.id && draggedItemCoords !== null;
 
   return (
     <div
       onDragOver={(e) => {
-        onSectionDragOver(e, sectionIndex);
-        onSectionBodyDragOver(e, section.id);
+        if (isDraggingSection) {
+          e.preventDefault();
+          const rect = e.currentTarget.getBoundingClientRect();
+          const isBottom = e.clientY - rect.top > rect.height / 2;
+          onSectionDragOver(e, sectionIndex, isBottom);
+        } else {
+          onSectionBodyDragOver(e, section.id);
+        }
       }}
       onDrop={(e) => {
-        onSectionDrop(e, sectionIndex);
-        onSectionBodyDrop(e, section.id);
+        if (isDraggingSection) {
+          e.preventDefault();
+          const rect = e.currentTarget.getBoundingClientRect();
+          const isBottom = e.clientY - rect.top > rect.height / 2;
+          onSectionDrop(e, sectionIndex, isBottom);
+        } else {
+          onSectionBodyDrop(e, section.id);
+        }
       }}
       className={`relative rounded-2xl p-5 border transition-all duration-150 group/section ${
         isDraggingThisSection
           ? 'opacity-30 border-dashed border-[#8ab4f8]'
-          : isSectionDropTarget
-          ? isDark
-            ? 'border-[#8ab4f8] ring-2 ring-[#8ab4f8] bg-[#2d3034]'
-            : 'border-[#1a73e8] ring-2 ring-[#1a73e8] bg-[#f1f3f4]'
-          : isSectionItemHover
-          ? isDark
-            ? 'border-[#8ab4f8]/60 bg-[#2d3034]'
-            : 'border-[#1a73e8]/60 bg-[#f1f3f4]'
           : isDark
           ? 'bg-[#28292c]/50 border-[#3c4043]/50 hover:border-[#3c4043]'
           : 'bg-[#fafafa] border-[#e4e6eb] hover:border-[#d0d3d8]'
       }`}
     >
+      {/* Section Drop Indicator (Before / Top) */}
+      {showSectionDropIndicatorBefore && (
+        <DropIndicator type="horizontal" position="before" />
+      )}
+
+      {/* Section Drop Indicator (After / Bottom) */}
+      {showSectionDropIndicatorAfter && (
+        <DropIndicator type="horizontal" position="after" />
+      )}
+
       {/* Section Header */}
       <div className="flex items-center justify-between mb-3.5 px-1 select-none">
         <div className="flex items-center gap-2">
@@ -262,7 +295,7 @@ export function SectionCard({
         </div>
       </div>
 
-      {/* Items Grid inside Section (Folders and Shortcuts) */}
+      {/* Items Grid inside Section */}
       <div
         className="flex flex-wrap gap-y-3 gap-x-2 select-none min-h-[112px] items-center"
         onDragOver={(e) => onSectionBodyDragOver(e, section.id)}
@@ -272,10 +305,11 @@ export function SectionCard({
           const isDragging =
             draggedItemCoords?.sectionId === section.id &&
             draggedItemCoords?.itemIndex === itIdx;
-          const isDropTarget =
-            dragOverItemCoords?.sectionId === section.id &&
-            dragOverItemCoords?.itemIndex === itIdx &&
+          const isTarget =
+            dragOverItemInfo?.sectionId === section.id &&
+            dragOverItemInfo?.itemIndex === itIdx &&
             !isDragging;
+          const dropIndicatorPosition = isTarget ? dragOverItemInfo.position : null;
           const isFolderHoverTarget = dragOverFolderTargetId === item.id;
 
           return (
@@ -286,7 +320,7 @@ export function SectionCard({
               sectionId={section.id}
               isDark={isDark}
               isDragging={isDragging}
-              isDropTarget={isDropTarget}
+              dropIndicatorPosition={dropIndicatorPosition}
               isFolderHoverTarget={isFolderHoverTarget}
               onItemClick={onItemClick}
               onDragStart={onItemDragStart}
@@ -304,14 +338,52 @@ export function SectionCard({
           );
         })}
 
+        {/* Empty Section Drop Target placeholder when dragging an item */}
+        {isDropTargetAtEnd && section.items.length === 0 && (
+          <div className="w-[112px] h-[112px] rounded-lg border-2 border-dashed border-[#1a73e8] dark:border-[#8ab4f8] bg-[#1a73e8]/10 dark:bg-[#8ab4f8]/10 flex flex-col items-center justify-center pointer-events-none animate-pulse">
+            <Icon
+              name="drive_file_move"
+              size={24}
+              className={isDark ? 'text-[#8ab4f8]' : 'text-[#1a73e8]'}
+            />
+            <span
+              className={`text-[11px] font-medium mt-1 ${
+                isDark ? 'text-[#8ab4f8]' : 'text-[#1a73e8]'
+              }`}
+            >
+              Сюда
+            </span>
+          </div>
+        )}
+
         {/* "+ Добавить" Tile inside this Section */}
         <button
           type="button"
           onClick={() => onOpenAddModal(section.id, null)}
-          className={`w-[112px] h-[112px] rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer transition-colors duration-150 group ${
+          onDragOver={(e) => {
+            if (draggedItemCoords) {
+              e.preventDefault();
+              e.stopPropagation();
+              e.dataTransfer.dropEffect = 'move';
+              onSectionBodyDragOver(e, section.id);
+            }
+          }}
+          onDrop={(e) => {
+            if (draggedItemCoords) {
+              e.preventDefault();
+              e.stopPropagation();
+              onSectionBodyDrop(e, section.id);
+            }
+          }}
+          className={`relative w-[112px] h-[112px] rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer transition-colors duration-150 group ${
             isDark ? 'hover:bg-[rgba(255,255,255,0.08)]' : 'hover:bg-[#ececec]'
           }`}
         >
+          {/* Drop Indicator before Add button (meaning: at the end of the items list) */}
+          {isDropTargetAtEnd && section.items.length > 0 && (
+            <DropIndicator type="vertical" position="before" />
+          )}
+
           <div
             className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-colors ${
               isDark ? 'bg-[#303134] text-[#e8eaed]' : 'bg-[#f1f3f4] text-[#5f6368]'
@@ -334,4 +406,3 @@ export function SectionCard({
 
 export const SectionCardMemo = React.memo(SectionCard);
 export default SectionCardMemo;
-

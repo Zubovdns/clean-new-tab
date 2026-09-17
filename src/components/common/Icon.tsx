@@ -8,7 +8,8 @@ export type IconName =
   | 'edit'
   | 'more_vert'
   | 'drag_indicator'
-  | 'folder';
+  | 'folder'
+  | 'drive_file_move';
 
 interface IconProps {
   name: IconName;
@@ -152,6 +153,25 @@ export function Icon({ name, className = '', size = 20 }: IconProps) {
           className={className}
         >
           <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
+        </svg>
+      );
+
+    case 'drive_file_move':
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+        >
+          <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+          <path d="M12 10v6" />
+          <path d="m9 13 3 3 3-3" />
         </svg>
       );
 

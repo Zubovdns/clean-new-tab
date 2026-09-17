@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { ChromeSection, ChromeFolder, EditingShortcutData } from '@app-types';
 import FaviconImage from '@components/common/FaviconImage';
 import Icon from '@components/common/Icon';
+import DropIndicator from '@components/common/DropIndicator';
 
 export interface FolderModalProps {
   isOpen: boolean;
@@ -35,7 +36,11 @@ export function FolderModal({
   setActiveMenuId,
 }: FolderModalProps) {
   const [draggedFolderItemIndex, setDraggedFolderItemIndex] = useState<number | null>(null);
-  const [dragOverFolderItemIndex, setDragOverFolderItemIndex] = useState<number | null>(null);
+  const [dragOverItemInfo, setDragOverItemInfo] = useState<{
+    itemIndex: number;
+    position: 'before' | 'after';
+  } | null>(null);
+  const [isDragOverFolderEnd, setIsDragOverFolderEnd] = useState(false);
   const draggedFolderItemIndexRef = useRef<number | null>(null);
   const isDraggingRef = useRef(false);
 
@@ -54,8 +59,16 @@ export function FolderModal({
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverFolderItemIndex !== index) {
-      setDragOverFolderItemIndex(index);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const position: 'before' | 'after' = relX > rect.width / 2 ? 'after' : 'before';
+    setIsDragOverFolderEnd(false);
+    if (
+      !dragOverItemInfo ||
+      dragOverItemInfo.itemIndex !== index ||
+      dragOverItemInfo.position !== position
+    ) {
+      setDragOverItemInfo({ itemIndex: index, position });
     }
   };
 
@@ -63,8 +76,13 @@ export function FolderModal({
     e.preventDefault();
     e.stopPropagation();
     const sourceIndex = draggedFolderItemIndexRef.current;
-    if (sourceIndex !== null && sourceIndex !== targetIndex) {
-      onReorderBookmarks(activeSection.id, activeFolder.id, sourceIndex, targetIndex);
+    if (sourceIndex !== null) {
+      const position = dragOverItemInfo?.position ?? 'after';
+      const insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
+      const finalIndex = insertIndex > sourceIndex ? insertIndex - 1 : insertIndex;
+      if (sourceIndex !== finalIndex) {
+        onReorderBookmarks(activeSection.id, activeFolder.id, sourceIndex, finalIndex);
+      }
     }
     handleFolderItemDragEnd();
   };
@@ -72,7 +90,8 @@ export function FolderModal({
   const handleFolderItemDragEnd = () => {
     draggedFolderItemIndexRef.current = null;
     setDraggedFolderItemIndex(null);
-    setDragOverFolderItemIndex(null);
+    setDragOverItemInfo(null);
+    setIsDragOverFolderEnd(false);
     setTimeout(() => {
       isDraggingRef.current = false;
     }, 100);
@@ -117,10 +136,32 @@ export function FolderModal({
         </div>
 
         {/* Bookmarks Grid inside Folder */}
-        <div className="flex flex-wrap gap-2 max-h-[50vh] overflow-y-auto no-scrollbar py-1 select-none">
+        <div
+          className="flex flex-wrap gap-2 max-h-[50vh] overflow-y-auto no-scrollbar py-1 select-none items-center"
+          onDragOver={(e) => {
+            if (draggedFolderItemIndexRef.current !== null) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+              setDragOverItemInfo(null);
+              setIsDragOverFolderEnd(true);
+            }
+          }}
+          onDrop={(e) => {
+            if (draggedFolderItemIndexRef.current !== null) {
+              e.preventDefault();
+              const sourceIndex = draggedFolderItemIndexRef.current;
+              const finalIndex = activeFolder.items.length - 1;
+              if (sourceIndex !== finalIndex) {
+                onReorderBookmarks(activeSection.id, activeFolder.id, sourceIndex, finalIndex);
+              }
+              handleFolderItemDragEnd();
+            }
+          }}
+        >
           {activeFolder.items.map((b, bIdx) => {
             const isDragging = draggedFolderItemIndex === bIdx;
-            const isDropTarget = dragOverFolderItemIndex === bIdx && !isDragging;
+            const isTarget = dragOverItemInfo?.itemIndex === bIdx && !isDragging;
+            const dropIndicatorPosition = isTarget ? dragOverItemInfo.position : null;
 
             return (
               <div
@@ -133,16 +174,21 @@ export function FolderModal({
                 onClick={() => handleItemClick(b.url)}
                 className={`group relative w-[100px] h-[100px] rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer transition-colors duration-150 ${
                   isDragging
-                    ? 'opacity-30'
-                    : isDropTarget
+                    ? 'opacity-30 border-2 border-dashed border-[#8ab4f8]'
+                    : dropIndicatorPosition
                     ? isDark
-                      ? 'bg-[#3c4043] ring-2 ring-[#8ab4f8]'
-                      : 'bg-[#e8eaed] ring-2 ring-[#1a73e8]'
+                      ? 'bg-[rgba(255,255,255,0.04)]'
+                      : 'bg-[#f8f9fa]'
                     : isDark
                     ? 'hover:bg-[rgba(255,255,255,0.08)]'
                     : 'hover:bg-[#f1f3f4]'
                 }`}
               >
+                {/* Drop Indicator (Before or After) */}
+                {dropIndicatorPosition && (
+                  <DropIndicator type="vertical" position={dropIndicatorPosition} />
+                )}
+
                 {/* Icon */}
                 <div
                   className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 overflow-hidden pointer-events-none transition-colors ${
@@ -155,7 +201,9 @@ export function FolderModal({
                     size={32}
                     isDark={isDark}
                     className="w-5 h-5 object-contain pointer-events-none"
-                    letterClassName={isDark ? 'text-[#8ab4f8] text-[16px]' : 'text-[#1a73e8] text-[16px]'}
+                    letterClassName={
+                      isDark ? 'text-[#8ab4f8] text-[16px]' : 'text-[#1a73e8] text-[16px]'
+                    }
                     customFavicon={b.favicon}
                     cachedFavicon={getCachedFavicon(b.url, b.favicon)}
                   />
@@ -243,10 +291,36 @@ export function FolderModal({
           <button
             type="button"
             onClick={() => onOpenAddModal(activeSection.id, activeFolder.id)}
-            className={`w-[100px] h-[100px] rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer transition-colors duration-150 group ${
+            onDragOver={(e) => {
+              if (draggedFolderItemIndexRef.current !== null) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = 'move';
+                setDragOverItemInfo(null);
+                setIsDragOverFolderEnd(true);
+              }
+            }}
+            onDrop={(e) => {
+              if (draggedFolderItemIndexRef.current !== null) {
+                e.preventDefault();
+                e.stopPropagation();
+                const sourceIndex = draggedFolderItemIndexRef.current;
+                const finalIndex = activeFolder.items.length - 1;
+                if (sourceIndex !== finalIndex) {
+                  onReorderBookmarks(activeSection.id, activeFolder.id, sourceIndex, finalIndex);
+                }
+                handleFolderItemDragEnd();
+              }
+            }}
+            className={`relative w-[100px] h-[100px] rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer transition-colors duration-150 group ${
               isDark ? 'hover:bg-[rgba(255,255,255,0.08)]' : 'hover:bg-[#f1f3f4]'
             }`}
           >
+            {/* Drop Indicator before Add button (at the end of items) */}
+            {isDragOverFolderEnd && activeFolder.items.length > 0 && (
+              <DropIndicator type="vertical" position="before" />
+            )}
+
             <div
               className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 transition-colors ${
                 isDark ? 'bg-[#303134] text-[#e8eaed]' : 'bg-[#f1f3f4] text-[#5f6368]'
@@ -270,4 +344,3 @@ export function FolderModal({
 
 export const FolderModalMemo = React.memo(FolderModal);
 export default FolderModalMemo;
-

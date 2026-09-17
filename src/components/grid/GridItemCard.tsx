@@ -6,6 +6,7 @@ import {
 } from '@app-types';
 import FaviconImage from '@components/common/FaviconImage';
 import Icon from '@components/common/Icon';
+import DropIndicator from '@components/common/DropIndicator';
 
 export interface GridItemCardProps {
   item: ChromeGridItem;
@@ -13,13 +14,25 @@ export interface GridItemCardProps {
   sectionId: string;
   isDark: boolean;
   isDragging: boolean;
-  isDropTarget: boolean;
+  dropIndicatorPosition: 'before' | 'after' | null;
   isFolderHoverTarget: boolean;
   onItemClick: (item: ChromeGridItem, sectionId: string) => void;
   onDragStart: (e: React.DragEvent, sectionId: string, itemIndex: number) => void;
   onDragEnd: () => void;
-  onDragOver: (e: React.DragEvent, sectionId: string, itemIndex: number, item: ChromeGridItem) => void;
-  onDrop: (e: React.DragEvent, sectionId: string, itemIndex: number, item: ChromeGridItem) => void;
+  onDragOver: (
+    e: React.DragEvent,
+    sectionId: string,
+    itemIndex: number,
+    item: ChromeGridItem,
+    position: 'before' | 'after' | 'inside'
+  ) => void;
+  onDrop: (
+    e: React.DragEvent,
+    sectionId: string,
+    itemIndex: number,
+    item: ChromeGridItem,
+    position: 'before' | 'after' | 'inside'
+  ) => void;
   onEditShortcut: (data: EditingShortcutData) => void;
   onDeleteShortcut: (id: string, sectionId: string) => void;
   onEditFolder: (data: EditingFolderData) => void;
@@ -35,7 +48,7 @@ export function GridItemCard({
   sectionId,
   isDark,
   isDragging,
-  isDropTarget,
+  dropIndicatorPosition,
   isFolderHoverTarget,
   onItemClick,
   onDragStart,
@@ -52,30 +65,102 @@ export function GridItemCard({
 }: GridItemCardProps) {
   const isFolder = item.type === 'folder';
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const width = rect.width;
+
+    let pos: 'before' | 'after' | 'inside';
+    if (isFolder) {
+      if (relX < width * 0.25) {
+        pos = 'before';
+      } else if (relX > width * 0.75) {
+        pos = 'after';
+      } else {
+        pos = 'inside';
+      }
+    } else {
+      pos = relX > width / 2 ? 'after' : 'before';
+    }
+
+    onDragOver(e, sectionId, itemIndex, item, pos);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relX = e.clientX - rect.left;
+    const width = rect.width;
+
+    let pos: 'before' | 'after' | 'inside';
+    if (isFolder) {
+      if (relX < width * 0.25) {
+        pos = 'before';
+      } else if (relX > width * 0.75) {
+        pos = 'after';
+      } else {
+        pos = 'inside';
+      }
+    } else {
+      pos = relX > width / 2 ? 'after' : 'before';
+    }
+
+    onDrop(e, sectionId, itemIndex, item, pos);
+  };
+
   return (
     <div
       draggable
       onDragStart={(e) => onDragStart(e, sectionId, itemIndex)}
       onDragEnd={onDragEnd}
-      onDragOver={(e) => onDragOver(e, sectionId, itemIndex, item)}
-      onDrop={(e) => onDrop(e, sectionId, itemIndex, item)}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
       onClick={() => onItemClick(item, sectionId)}
       className={`group relative w-[112px] h-[112px] rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer transition-colors duration-150 ${
         isDragging
-          ? 'opacity-30'
+          ? 'opacity-30 border-2 border-dashed border-[#8ab4f8]'
           : isFolderHoverTarget
           ? isDark
-            ? 'bg-[#3c4043] ring-2 ring-[#8ab4f8]'
-            : 'bg-[#e8eaed] ring-2 ring-[#1a73e8]'
-          : isDropTarget
+            ? 'bg-[#3c4043]'
+            : 'bg-[#e8eaed]'
+          : dropIndicatorPosition
           ? isDark
-            ? 'bg-[#3c4043] ring-2 ring-[#8ab4f8]'
-            : 'bg-[#e8eaed] ring-2 ring-[#1a73e8]'
+            ? 'bg-[rgba(255,255,255,0.04)]'
+            : 'bg-[#f8f9fa]'
           : isDark
           ? 'hover:bg-[rgba(255,255,255,0.08)]'
           : 'hover:bg-[#ececec]'
       }`}
     >
+      {/* Drop Indicator (Before or After) */}
+      {dropIndicatorPosition && !isDragging && (
+        <DropIndicator type="vertical" position={dropIndicatorPosition} />
+      )}
+
+      {/* Folder Hover Target Overlay */}
+      {isFolderHoverTarget && !isDragging && (
+        <div className="absolute inset-0 rounded-lg bg-[#1a73e8]/15 dark:bg-[#8ab4f8]/20 border-2 border-[#1a73e8] dark:border-[#8ab4f8] flex flex-col items-center justify-center pointer-events-none z-20 backdrop-blur-[0.5px] animate-in fade-in duration-100">
+          <Icon
+            name="drive_file_move"
+            size={24}
+            className={isDark ? 'text-[#8ab4f8]' : 'text-[#1a73e8]'}
+          />
+          <span
+            className={`text-[10px] font-medium mt-0.5 ${
+              isDark ? 'text-[#8ab4f8]' : 'text-[#1a73e8]'
+            }`}
+          >
+            В папку
+          </span>
+        </div>
+      )}
+
       {/* Circular Icon Container */}
       <div
         className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 overflow-hidden pointer-events-none transition-colors ${
@@ -235,4 +320,3 @@ export function GridItemCard({
 
 export const GridItemCardMemo = React.memo(GridItemCard);
 export default GridItemCardMemo;
-

@@ -55,7 +55,7 @@ export default function Newtab() {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   const [draggedSectionIndex, setDraggedSectionIndex] = useState<number | null>(null);
-  const [dragOverSectionIndex, setDragOverSectionIndex] = useState<number | null>(null);
+  const [dragOverSectionGap, setDragOverSectionGap] = useState<number | null>(null);
   const draggedSectionIndexRef = useRef<number | null>(null);
 
   const [draggedItemCoords, setDraggedItemCoords] = useState<{
@@ -67,12 +67,13 @@ export default function Newtab() {
     itemIndex: number;
   } | null>(null);
 
-  const [dragOverItemCoords, setDragOverItemCoords] = useState<{
+  const [dragOverItemInfo, setDragOverItemInfo] = useState<{
     sectionId: string;
     itemIndex: number;
+    position: 'before' | 'after';
   } | null>(null);
   const [dragOverFolderTargetId, setDragOverFolderTargetId] = useState<string | null>(null);
-  const [dragOverSectionTargetId, setDragOverSectionTargetId] = useState<string | null>(null);
+  const [dragOverSectionEndId, setDragOverSectionEndId] = useState<string | null>(null);
 
   const isDraggingRef = useRef(false);
 
@@ -140,32 +141,44 @@ export default function Newtab() {
     e.dataTransfer.setData('text/plain', `sec:${index}`);
   }, []);
 
-  const handleSectionDragOver = useCallback((e: React.DragEvent, index: number) => {
+  const handleSectionDragOver = useCallback((
+    e: React.DragEvent,
+    sectionIndex: number,
+    isBottom: boolean
+  ) => {
     if (draggedSectionIndexRef.current === null) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverSectionIndex !== index) {
-      setDragOverSectionIndex(index);
+    const targetGap = isBottom ? sectionIndex + 1 : sectionIndex;
+    if (dragOverSectionGap !== targetGap) {
+      setDragOverSectionGap(targetGap);
     }
-  }, [dragOverSectionIndex]);
+  }, [dragOverSectionGap]);
 
   const handleSectionDragEnd = useCallback(() => {
     draggedSectionIndexRef.current = null;
     setDraggedSectionIndex(null);
-    setDragOverSectionIndex(null);
+    setDragOverSectionGap(null);
     setTimeout(() => {
       isDraggingRef.current = false;
     }, 100);
   }, []);
 
-  const handleSectionDrop = useCallback((e: React.DragEvent, targetIndex: number) => {
+  const handleSectionDrop = useCallback((
+    e: React.DragEvent,
+    sectionIndex: number,
+    isBottom: boolean
+  ) => {
     if (draggedSectionIndexRef.current === null) return;
     e.preventDefault();
     e.stopPropagation();
 
     const sourceIndex = draggedSectionIndexRef.current;
-    if (sourceIndex !== null && sourceIndex !== targetIndex) {
-      reorderSections(sourceIndex, targetIndex);
+    const targetGap = isBottom ? sectionIndex + 1 : sectionIndex;
+
+    if (targetGap !== sourceIndex && targetGap !== sourceIndex + 1) {
+      const finalIndex = targetGap > sourceIndex ? targetGap - 1 : targetGap;
+      reorderSections(sourceIndex, finalIndex);
     }
     handleSectionDragEnd();
   }, [reorderSections, handleSectionDragEnd]);
@@ -184,7 +197,8 @@ export default function Newtab() {
     e: React.DragEvent,
     sectionId: string,
     itemIndex: number,
-    targetItem: ChromeGridItem
+    targetItem: ChromeGridItem,
+    position: 'before' | 'after' | 'inside'
   ) => {
     if (draggedSectionIndexRef.current !== null) return;
     const source = draggedItemCoordsRef.current;
@@ -196,39 +210,41 @@ export default function Newtab() {
 
     const sourceSec = sections.find((s) => s.id === source.sectionId);
     const sourceItem = sourceSec?.items[source.itemIndex];
-
-    // Detect hover over a folder to support drop-into-folder
-    if (
-      sourceItem &&
-      sourceItem.type === 'shortcut' &&
+    const canNestInFolder =
+      sourceItem?.type === 'shortcut' &&
       targetItem.type === 'folder' &&
-      !(source.sectionId === sectionId && source.itemIndex === itemIndex)
-    ) {
+      !(source.sectionId === sectionId && source.itemIndex === itemIndex);
+
+    if (position === 'inside' && canNestInFolder) {
       if (dragOverFolderTargetId !== targetItem.id) {
         setDragOverFolderTargetId(targetItem.id);
-        setDragOverItemCoords(null);
-        setDragOverSectionTargetId(null);
+        setDragOverItemInfo(null);
+        setDragOverSectionEndId(null);
       }
       return;
     }
 
+    const effectivePosition: 'before' | 'after' = position === 'inside' ? 'after' : position;
+
     setDragOverFolderTargetId(null);
-    setDragOverSectionTargetId(null);
+    setDragOverSectionEndId(null);
+
     if (
-      !dragOverItemCoords ||
-      dragOverItemCoords.sectionId !== sectionId ||
-      dragOverItemCoords.itemIndex !== itemIndex
+      !dragOverItemInfo ||
+      dragOverItemInfo.sectionId !== sectionId ||
+      dragOverItemInfo.itemIndex !== itemIndex ||
+      dragOverItemInfo.position !== effectivePosition
     ) {
-      setDragOverItemCoords({ sectionId, itemIndex });
+      setDragOverItemInfo({ sectionId, itemIndex, position: effectivePosition });
     }
-  }, [sections, dragOverFolderTargetId, dragOverItemCoords]);
+  }, [sections, dragOverFolderTargetId, dragOverItemInfo]);
 
   const handleItemDragEnd = useCallback(() => {
     draggedItemCoordsRef.current = null;
     setDraggedItemCoords(null);
-    setDragOverItemCoords(null);
+    setDragOverItemInfo(null);
     setDragOverFolderTargetId(null);
-    setDragOverSectionTargetId(null);
+    setDragOverSectionEndId(null);
     setTimeout(() => {
       isDraggingRef.current = false;
     }, 100);
@@ -238,7 +254,8 @@ export default function Newtab() {
     e: React.DragEvent,
     targetSectionId: string,
     targetItemIndex: number,
-    targetItem: ChromeGridItem
+    targetItem: ChromeGridItem,
+    position: 'before' | 'after' | 'inside'
   ) => {
     if (draggedSectionIndexRef.current !== null) return;
     const source = draggedItemCoordsRef.current;
@@ -257,8 +274,9 @@ export default function Newtab() {
       return;
     }
 
-    // Nest shortcut into folder when dropped directly on a folder tile
+    // Nest shortcut into folder when dropped directly inside a folder
     if (
+      position === 'inside' &&
       sourceItem.type === 'shortcut' &&
       targetItem.type === 'folder' &&
       !(source.sectionId === targetSectionId && source.itemIndex === targetItemIndex)
@@ -268,29 +286,36 @@ export default function Newtab() {
       return;
     }
 
+    const effectivePosition: 'before' | 'after' = position === 'inside' ? 'after' : position;
+
     // Reorder within same section
     if (source.sectionId === targetSectionId) {
-      reorderItemsInSameSection(targetSectionId, source.itemIndex, targetItemIndex);
+      const insertIndex = effectivePosition === 'before' ? targetItemIndex : targetItemIndex + 1;
+      const finalIndex = insertIndex > source.itemIndex ? insertIndex - 1 : insertIndex;
+      if (source.itemIndex !== finalIndex) {
+        reorderItemsInSameSection(targetSectionId, source.itemIndex, finalIndex);
+      }
       handleItemDragEnd();
       return;
     }
 
     // Transfer item across sections
-    moveItemAcrossSections(source.sectionId, source.itemIndex, targetSectionId, targetItemIndex);
+    const targetIndex = effectivePosition === 'before' ? targetItemIndex : targetItemIndex + 1;
+    moveItemAcrossSections(source.sectionId, source.itemIndex, targetSectionId, targetIndex);
     handleItemDragEnd();
   }, [sections, moveItemToFolder, reorderItemsInSameSection, moveItemAcrossSections, handleItemDragEnd]);
 
   const handleSectionBodyDragOver = useCallback((e: React.DragEvent, sectionId: string) => {
     if (draggedSectionIndexRef.current !== null) return;
     if (draggedItemCoordsRef.current === null) return;
-    if (dragOverFolderTargetId || dragOverItemCoords) return;
+    if (dragOverFolderTargetId || dragOverItemInfo) return;
 
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverSectionTargetId !== sectionId) {
-      setDragOverSectionTargetId(sectionId);
+    if (dragOverSectionEndId !== sectionId) {
+      setDragOverSectionEndId(sectionId);
     }
-  }, [dragOverFolderTargetId, dragOverItemCoords, dragOverSectionTargetId]);
+  }, [dragOverFolderTargetId, dragOverItemInfo, dragOverSectionEndId]);
 
   const handleSectionBodyDrop = useCallback((e: React.DragEvent, targetSectionId: string) => {
     if (draggedSectionIndexRef.current !== null) return;
@@ -303,14 +328,24 @@ export default function Newtab() {
     e.preventDefault();
     e.stopPropagation();
 
+    const targetSec = sections.find((s) => s.id === targetSectionId);
+    if (!targetSec) {
+      handleItemDragEnd();
+      return;
+    }
+
     if (source.sectionId === targetSectionId) {
+      const finalIndex = targetSec.items.length - 1;
+      if (source.itemIndex !== finalIndex) {
+        reorderItemsInSameSection(targetSectionId, source.itemIndex, finalIndex);
+      }
       handleItemDragEnd();
       return;
     }
 
     moveItemToEndOfSection(source.sectionId, source.itemIndex, targetSectionId);
     handleItemDragEnd();
-  }, [moveItemToEndOfSection, handleItemDragEnd]);
+  }, [sections, reorderItemsInSameSection, moveItemToEndOfSection, handleItemDragEnd]);
 
   const handleItemClick = useCallback((item: ChromeGridItem, sectionId: string) => {
     if (isDraggingRef.current) return;
@@ -343,10 +378,23 @@ export default function Newtab() {
       <div className="w-full max-w-[820px] flex flex-col gap-8">
         {sections.map((section, sIdx) => {
           const isDraggingThisSection = draggedSectionIndex === sIdx;
-          const isSectionDropTarget =
-            dragOverSectionIndex === sIdx && draggedSectionIndex !== null && !isDraggingThisSection;
-          const isSectionItemHover =
-            dragOverSectionTargetId === section.id && draggedItemCoords !== null;
+          const isLastSection = sIdx === sections.length - 1;
+          const isSelfGap =
+            draggedSectionIndex !== null &&
+            (dragOverSectionGap === draggedSectionIndex || dragOverSectionGap === draggedSectionIndex + 1);
+
+          const showSectionDropIndicatorBefore =
+            draggedSectionIndex !== null &&
+            !isDraggingThisSection &&
+            !isSelfGap &&
+            dragOverSectionGap === sIdx;
+
+          const showSectionDropIndicatorAfter =
+            draggedSectionIndex !== null &&
+            !isDraggingThisSection &&
+            !isSelfGap &&
+            isLastSection &&
+            dragOverSectionGap === sections.length;
 
           return (
             <SectionCard
@@ -355,11 +403,13 @@ export default function Newtab() {
               sectionIndex={sIdx}
               isDark={isDark}
               isDraggingThisSection={isDraggingThisSection}
-              isSectionDropTarget={isSectionDropTarget}
-              isSectionItemHover={isSectionItemHover}
+              draggedSectionIndex={draggedSectionIndex}
+              showSectionDropIndicatorBefore={showSectionDropIndicatorBefore}
+              showSectionDropIndicatorAfter={showSectionDropIndicatorAfter}
               draggedItemCoords={draggedItemCoords}
-              dragOverItemCoords={dragOverItemCoords}
+              dragOverItemInfo={dragOverItemInfo}
               dragOverFolderTargetId={dragOverFolderTargetId}
+              dragOverSectionEndId={dragOverSectionEndId}
               onSectionDragStart={handleSectionDragStart}
               onSectionDragEnd={handleSectionDragEnd}
               onSectionDragOver={handleSectionDragOver}
