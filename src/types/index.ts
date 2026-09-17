@@ -2,6 +2,7 @@ export interface ChromeBookmark {
   id: string;
   title: string;
   url: string;
+  favicon?: string;
 }
 
 export interface ChromeFolder {
@@ -16,6 +17,7 @@ export interface ChromeShortcutItem {
   type: 'shortcut';
   title: string;
   url: string;
+  favicon?: string;
 }
 
 export type ChromeGridItem = ChromeShortcutItem | ChromeFolder;

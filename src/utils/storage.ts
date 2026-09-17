@@ -2,6 +2,7 @@ import { ChromeGridItem, ChromeSection } from '../types';
 
 export const CHROME_NTP_SECTIONS_KEY = 'chrome_ntp_sections_v3';
 export const CHROME_NTP_ITEMS_KEY = 'chrome_ntp_grid_items_v2';
+export const CHROME_NTP_FAVICON_CACHE_KEY = 'chrome_ntp_favicon_cache_v1';
 
 export const DEFAULT_SECTIONS: ChromeSection[] = [
   {
@@ -141,3 +142,35 @@ export async function loadSectionsFromStorage(): Promise<ChromeSection[]> {
 
   return DEFAULT_SECTIONS;
 }
+
+/**
+ * Favicon persistent cache helpers
+ */
+export async function getFaviconCache(): Promise<Record<string, string>> {
+  return getStorageItem<Record<string, string>>(CHROME_NTP_FAVICON_CACHE_KEY, {});
+}
+
+export async function saveFaviconToCache(key: string, faviconUrl: string): Promise<void> {
+  if (!key || !faviconUrl) return;
+  const cache = await getFaviconCache();
+  if (cache[key] === faviconUrl) return;
+  cache[key] = faviconUrl;
+  await setStorageItem(CHROME_NTP_FAVICON_CACHE_KEY, cache);
+}
+
+export async function saveMultipleFaviconsToCache(entries: Record<string, string>): Promise<void> {
+  const keys = Object.keys(entries);
+  if (keys.length === 0) return;
+  const cache = await getFaviconCache();
+  let changed = false;
+  for (const [k, v] of Object.entries(entries)) {
+    if (k && v && cache[k] !== v) {
+      cache[k] = v;
+      changed = true;
+    }
+  }
+  if (changed) {
+    await setStorageItem(CHROME_NTP_FAVICON_CACHE_KEY, cache);
+  }
+}
+

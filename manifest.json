@@ -11,16 +11,24 @@
     "128": "icon-128.png"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "favicon",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
   ],
   "web_accessible_resources": [
     {
       "resources": [
+        "_favicon/*",
         "favicon.svg",
         "icon-128.png",
         "icon-32.png"
       ],
-      "matches": []
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }

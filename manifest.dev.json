@@ -4,14 +4,25 @@
     "32": "public/dev-icon-32.png",
     "128": "public/dev-icon-128.png"
   },
+  "permissions": [
+    "storage",
+    "favicon",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "web_accessible_resources": [
     {
       "resources": [
+        "_favicon/*",
         "favicon.svg",
         "dev-icon-128.png",
         "dev-icon-32.png"
       ],
-      "matches": []
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }

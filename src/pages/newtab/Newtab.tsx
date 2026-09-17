@@ -8,24 +8,195 @@ import {
 } from '../../types';
 import {
   CHROME_NTP_SECTIONS_KEY,
+  CHROME_NTP_FAVICON_CACHE_KEY,
   DEFAULT_SECTIONS,
+  getFaviconCache,
   loadSectionsFromStorage,
   setStorageItem,
 } from '../../utils/storage';
 
 function getDomain(rawUrl: string): string {
   try {
-    const url = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
+    const url = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+      ? rawUrl
+      : `https://${rawUrl}`;
     return new URL(url).hostname;
   } catch {
     return rawUrl;
   }
 }
 
-function getFaviconUrl(url: string): string {
-  const domain = getDomain(url);
-  return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+function getRootDomain(domain: string): string {
+  const parts = domain.split('.');
+  if (parts.length > 2) {
+    return parts.slice(-2).join('.');
+  }
+  return domain;
 }
+
+function getFaviconCandidates(
+  rawUrl: string,
+  size = 64,
+  cachedFavicon?: string
+): string[] {
+  const targetUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+    ? rawUrl
+    : `https://${rawUrl}`;
+
+  const candidates: string[] = [];
+  const domain = getDomain(targetUrl);
+  const rootDomain = getRootDomain(domain);
+
+  // 0. Cached favicon from tab capture, background scraper, or custom override
+  // (base64 Data URI or exact tab URL - works offline & bypasses CORS/CORP!)
+  if (cachedFavicon) {
+    candidates.push(cachedFavicon);
+  }
+
+  // 1. Direct site favicon at origin root (https://domain/favicon.ico)
+  // This is where standard sites host their favicon (YouTube, Gemini, OpenRouter, etc.)
+  if (
+    domain &&
+    !domain.includes('localhost') &&
+    !domain.startsWith('127.') &&
+    !domain.startsWith('192.168.')
+  ) {
+    try {
+      const origin = new URL(targetUrl).origin;
+      candidates.push(`${origin}/favicon.ico`);
+    } catch {
+      candidates.push(`https://${domain}/favicon.ico`);
+    }
+
+    if (rootDomain && rootDomain !== domain) {
+      candidates.push(`https://${rootDomain}/favicon.ico`);
+    }
+  }
+
+  // 2. DuckDuckGo Favicon CDN (primary domain + root domain fallback)
+  if (domain) {
+    candidates.push(`https://icons.duckduckgo.com/ip3/${domain}.ico`);
+    if (rootDomain && rootDomain !== domain) {
+      candidates.push(`https://icons.duckduckgo.com/ip3/${rootDomain}.ico`);
+    }
+  }
+
+  // 3. Google S2 Favicon service (domain + root domain fallback)
+  if (domain) {
+    candidates.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`);
+    if (rootDomain && rootDomain !== domain) {
+      candidates.push(`https://www.google.com/s2/favicons?domain=${rootDomain}&sz=${size}`);
+    }
+  }
+
+  // 4. Icon Horse CDN
+  if (domain) {
+    candidates.push(`https://icon.horse/icon/${domain}`);
+  }
+
+  // 5. Chrome / Chromium native internal favicon database (_favicon)
+  // Note: Placed after direct sources to avoid premature net::ERR_FAILED console logs
+  const isChromium =
+    typeof chrome !== 'undefined' &&
+    !!chrome.runtime?.getURL &&
+    !navigator.userAgent.toLowerCase().includes('firefox');
+
+  if (isChromium) {
+    try {
+      const url = new URL(chrome.runtime.getURL('/_favicon/'));
+      url.searchParams.set('pageUrl', targetUrl);
+      url.searchParams.set('size', size.toString());
+      candidates.push(url.toString());
+    } catch {
+      // ignore
+    }
+  }
+
+  return candidates;
+}
+
+interface FaviconImageProps {
+  url: string;
+  title: string;
+  size?: number;
+  className?: string;
+  isDark?: boolean;
+  letterClassName?: string;
+  hideOnFallback?: boolean;
+  customFavicon?: string;
+  cachedFavicon?: string;
+}
+
+function FaviconImage({
+  url,
+  title,
+  size = 64,
+  className = 'w-6 h-6 object-contain pointer-events-none',
+  isDark = true,
+  letterClassName = '',
+  hideOnFallback = false,
+  customFavicon,
+  cachedFavicon,
+}: FaviconImageProps) {
+  const activeCachedFavicon = customFavicon || cachedFavicon;
+  const candidates = React.useMemo(
+    () => getFaviconCandidates(url, size, activeCachedFavicon),
+    [url, size, activeCachedFavicon]
+  );
+  const [candidateIndex, setCandidateIndex] = useState(0);
+
+  useEffect(() => {
+    setCandidateIndex(0);
+  }, [url, activeCachedFavicon]);
+
+  const nextCandidate = () => {
+    setCandidateIndex((prev) => prev + 1);
+  };
+
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    const currentSrc = candidates[candidateIndex] || '';
+    // If it came from Google S2 and is a 16x16 or smaller image (Google's default pixelated globe), reject it if we have more candidates!
+    if (
+      (currentSrc.includes('google.com/s2') || currentSrc.includes('gstatic.com')) &&
+      img.naturalWidth <= 16 &&
+      img.naturalHeight <= 16 &&
+      candidateIndex < candidates.length - 1
+    ) {
+      nextCandidate();
+    }
+  };
+
+  if (candidateIndex >= candidates.length) {
+    if (hideOnFallback) {
+      return null;
+    }
+    const firstLetter = (title || 'G').trim().charAt(0).toUpperCase();
+    return (
+      <span
+        className={`font-medium pointer-events-none select-none ${
+          letterClassName ||
+          (isDark ? 'text-[#8ab4f8] text-[18px]' : 'text-[#1a73e8] text-[18px]')
+        }`}
+      >
+        {firstLetter}
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={candidates[candidateIndex]}
+      alt={title}
+      draggable={false}
+      className={className}
+      onError={nextCandidate}
+      onLoad={handleLoad}
+    />
+  );
+}
+
+
 
 export default function Newtab() {
   const [sections, setSections] = useState<ChromeSection[]>([]);
@@ -43,8 +214,30 @@ export default function Newtab() {
   const [addModalType, setAddModalType] = useState<'shortcut' | 'folder'>('shortcut');
   const [addTitle, setAddTitle] = useState('');
   const [addUrl, setAddUrl] = useState('');
+  const [addFavicon, setAddFavicon] = useState('');
   const [targetSectionId, setTargetSectionId] = useState<string>('');
   const [targetFolderId, setTargetFolderId] = useState<string | null>(null);
+
+  // Favicon dynamic persistent cache
+  const [faviconCache, setFaviconCache] = useState<Record<string, string>>({});
+
+  // Helper to resolve cached favicon from storage or custom item favicon
+  const getCachedFavicon = (rawUrl: string, itemFavicon?: string) => {
+    if (itemFavicon) return itemFavicon;
+    const domain = getDomain(rawUrl);
+    let origin = '';
+    try {
+      origin = new URL(rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`).origin;
+    } catch {
+      // ignore
+    }
+    return (
+      faviconCache[rawUrl] ||
+      faviconCache[domain] ||
+      (origin ? faviconCache[origin] : '') ||
+      ''
+    );
+  };
 
   // Add Section Modal
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
@@ -61,6 +254,7 @@ export default function Newtab() {
     url: string;
     sectionId: string;
     folderId?: string;
+    favicon?: string;
   } | null>(null);
 
   // Edit Folder Modal
@@ -102,8 +296,6 @@ export default function Newtab() {
   const [dragOverFolderItemIndex, setDragOverFolderItemIndex] = useState<number | null>(null);
   const draggedFolderItemIndexRef = useRef<number | null>(null);
 
-  // Favicon error fallback cache
-  const [faviconErrors, setFaviconErrors] = useState<Record<string, boolean>>({});
 
   // Detect system color scheme
   useEffect(() => {
@@ -124,6 +316,52 @@ export default function Newtab() {
       setIsLoaded(true);
     });
   }, []);
+
+  // Load favicon cache and subscribe to updates
+  useEffect(() => {
+    getFaviconCache().then(setFaviconCache);
+
+    const handleStorageChange = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      areaName: string
+    ) => {
+      if (areaName === 'local' && changes[CHROME_NTP_FAVICON_CACHE_KEY]?.newValue) {
+        setFaviconCache(changes[CHROME_NTP_FAVICON_CACHE_KEY].newValue);
+      }
+    };
+
+    if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
+      chrome.storage.onChanged.addListener(handleStorageChange);
+      return () => {
+        chrome.storage.onChanged.removeListener(handleStorageChange);
+      };
+    }
+  }, []);
+
+  // Request background service worker to resolve and cache favicons for all bookmarks
+  useEffect(() => {
+    if (!sections || sections.length === 0) return;
+    const urls: string[] = [];
+    for (const sec of sections) {
+      for (const item of sec.items) {
+        if (item.type === 'shortcut' && item.url) {
+          urls.push(item.url);
+        } else if (item.type === 'folder' && Array.isArray(item.items)) {
+          for (const b of item.items) {
+            if (b.url) urls.push(b.url);
+          }
+        }
+      }
+    }
+
+    if (urls.length > 0 && typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      try {
+        chrome.runtime.sendMessage({ type: 'RESOLVE_FAVICONS', urls }).catch(() => {});
+      } catch {
+        // ignore
+      }
+    }
+  }, [sections]);
 
   // Global Escape key listener to close modals
   useEffect(() => {
@@ -216,6 +454,7 @@ export default function Newtab() {
     setAddModalType(folderId ? 'shortcut' : 'shortcut');
     setAddTitle('');
     setAddUrl('');
+    setAddFavicon('');
     setIsAddModalOpen(true);
   };
 
@@ -248,11 +487,13 @@ export default function Newtab() {
       url = `https://${url}`;
     }
     const finalTitle = title || getDomain(url);
+    const customIcon = addFavicon.trim() || undefined;
 
     const newBookmark: ChromeBookmark = {
       id: `bm-${Date.now()}`,
       title: finalTitle,
       url,
+      favicon: customIcon,
     };
 
     if (targetFolderId) {
@@ -284,6 +525,15 @@ export default function Newtab() {
       saveSections(updated);
     }
 
+    // Proactively request background service worker to resolve favicon
+    if (!customIcon && typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      try {
+        chrome.runtime.sendMessage({ type: 'RESOLVE_FAVICON', url }).catch(() => {});
+      } catch {
+        // ignore
+      }
+    }
+
     setIsAddModalOpen(false);
   };
 
@@ -296,6 +546,7 @@ export default function Newtab() {
       url = `https://${url}`;
     }
     const title = editingShortcut.title.trim() || getDomain(url);
+    const customIcon = editingShortcut.favicon?.trim() || undefined;
     const { id, sectionId: targetSecId, folderId } = editingShortcut;
 
     // Inside folder
@@ -306,7 +557,9 @@ export default function Newtab() {
           if (it.id === folderId && it.type === 'folder') {
             return {
               ...it,
-              items: it.items.map((b) => (b.id === id ? { ...b, title, url } : b)),
+              items: it.items.map((b) =>
+                b.id === id ? { ...b, title, url, favicon: customIcon } : b
+              ),
             };
           }
           return it;
@@ -323,7 +576,7 @@ export default function Newtab() {
       ...s,
       items: s.items.filter((it) => {
         if (it.id === id && it.type === 'shortcut') {
-          foundShortcut = { ...it, title, url };
+          foundShortcut = { ...it, title, url, favicon: customIcon };
           return false;
         }
         return true;
@@ -338,6 +591,15 @@ export default function Newtab() {
         return s;
       });
       saveSections(updated);
+    }
+
+    // Proactively request background service worker to resolve favicon if changed
+    if (!customIcon && typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      try {
+        chrome.runtime.sendMessage({ type: 'RESOLVE_FAVICON', url }).catch(() => {});
+      } catch {
+        // ignore
+      }
     }
 
     setEditingShortcut(null);
@@ -1027,15 +1289,15 @@ export default function Newtab() {
                             // 2x2 Mini Favicons Grid for Folders
                             <div className="grid grid-cols-2 gap-1 p-2 w-full h-full pointer-events-none">
                               {item.items.slice(0, 4).map((b) => (
-                                <img
+                                <FaviconImage
                                   key={b.id}
-                                  src={getFaviconUrl(b.url)}
-                                  alt=""
-                                  draggable={false}
+                                  url={b.url}
+                                  title={b.title}
+                                  size={32}
                                   className="w-3.5 h-3.5 object-contain pointer-events-none"
-                                  onError={(e) => {
-                                    (e.currentTarget as HTMLElement).style.display = 'none';
-                                  }}
+                                  hideOnFallback={true}
+                                  customFavicon={b.favicon}
+                                  cachedFavicon={getCachedFavicon(b.url, b.favicon)}
                                 />
                               ))}
                             </div>
@@ -1048,24 +1310,17 @@ export default function Newtab() {
                               folder
                             </span>
                           )
-                        ) : !faviconErrors[item.id] ? (
-                          <img
-                            src={getFaviconUrl(item.url)}
-                            alt={item.title}
-                            draggable={false}
-                            className="w-6 h-6 object-contain pointer-events-none"
-                            onError={() =>
-                              setFaviconErrors((prev) => ({ ...prev, [item.id]: true }))
-                            }
-                          />
                         ) : (
-                          <span
-                            className={`text-[18px] font-medium pointer-events-none ${
-                              isDark ? 'text-[#8ab4f8]' : 'text-[#1a73e8]'
-                            }`}
-                          >
-                            {(item.title || 'G').charAt(0).toUpperCase()}
-                          </span>
+                          <FaviconImage
+                            url={item.url}
+                            title={item.title}
+                            size={64}
+                            isDark={isDark}
+                            className="w-6 h-6 object-contain pointer-events-none"
+                            letterClassName={isDark ? 'text-[#8ab4f8] text-[18px]' : 'text-[#1a73e8] text-[18px]'}
+                            customFavicon={item.favicon}
+                            cachedFavicon={getCachedFavicon(item.url, item.favicon)}
+                          />
                         )}
                       </div>
 
@@ -1148,6 +1403,7 @@ export default function Newtab() {
                                       title: item.title,
                                       url: item.url,
                                       sectionId: section.id,
+                                      favicon: item.favicon,
                                     });
                                     setActiveMenuId(null);
                                   }}
@@ -1265,8 +1521,6 @@ export default function Newtab() {
               {activeFolder.items.map((b, bIdx) => {
                 const isDragging = draggedFolderItemIndex === bIdx;
                 const isDropTarget = dragOverFolderItemIndex === bIdx && !isDragging;
-                const hasError = faviconErrors[b.id];
-                const firstLetter = (b.title || 'G').charAt(0).toUpperCase();
 
                 return (
                   <div
@@ -1297,25 +1551,16 @@ export default function Newtab() {
                         isDark ? 'bg-[#303134]' : 'bg-[#f1f3f4]'
                       }`}
                     >
-                      {!hasError ? (
-                        <img
-                          src={getFaviconUrl(b.url)}
-                          alt={b.title}
-                          draggable={false}
-                          className="w-5 h-5 object-contain pointer-events-none"
-                          onError={() =>
-                            setFaviconErrors((prev) => ({ ...prev, [b.id]: true }))
-                          }
-                        />
-                      ) : (
-                        <span
-                          className={`text-[16px] font-medium pointer-events-none ${
-                            isDark ? 'text-[#8ab4f8]' : 'text-[#1a73e8]'
-                          }`}
-                        >
-                          {firstLetter}
-                        </span>
-                      )}
+                      <FaviconImage
+                        url={b.url}
+                        title={b.title}
+                        size={48}
+                        isDark={isDark}
+                        className="w-5 h-5 object-contain pointer-events-none"
+                        letterClassName={isDark ? 'text-[#8ab4f8] text-[16px]' : 'text-[#1a73e8] text-[16px]'}
+                        customFavicon={b.favicon}
+                        cachedFavicon={getCachedFavicon(b.url, b.favicon)}
+                      />
                     </div>
 
                     {/* Title */}
@@ -1365,6 +1610,7 @@ export default function Newtab() {
                                 url: b.url,
                                 sectionId: activeSection.id,
                                 folderId: activeFolder.id,
+                                favicon: b.favicon,
                               });
                               setActiveMenuId(null);
                             }}
@@ -1587,23 +1833,42 @@ export default function Newtab() {
               </div>
 
               {addModalType === 'shortcut' && (
-                <div>
-                  <label className="block text-xs font-normal text-[#9aa0a6] mb-1">
-                    URL
-                  </label>
-                  <input
-                    type="text"
-                    value={addUrl}
-                    onChange={(e) => setAddUrl(e.target.value)}
-                    placeholder="https://github.com"
-                    required
-                    className={`w-full px-3 py-2 text-sm rounded-lg outline-none border transition-colors ${
-                      isDark
-                        ? 'bg-[#303134] border-[#3c4043] focus:border-[#8ab4f8] text-[#e8eaed]'
-                        : 'bg-white border-[#dadce0] focus:border-[#1a73e8] text-[#202124]'
-                    }`}
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className="block text-xs font-normal text-[#9aa0a6] mb-1">
+                      URL
+                    </label>
+                    <input
+                      type="text"
+                      value={addUrl}
+                      onChange={(e) => setAddUrl(e.target.value)}
+                      placeholder="https://github.com"
+                      required
+                      className={`w-full px-3 py-2 text-sm rounded-lg outline-none border transition-colors ${
+                        isDark
+                          ? 'bg-[#303134] border-[#3c4043] focus:border-[#8ab4f8] text-[#e8eaed]'
+                          : 'bg-white border-[#dadce0] focus:border-[#1a73e8] text-[#202124]'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-normal text-[#9aa0a6] mb-1">
+                      Иконка (необязательно, URL или data:)
+                    </label>
+                    <input
+                      type="text"
+                      value={addFavicon}
+                      onChange={(e) => setAddFavicon(e.target.value)}
+                      placeholder="https://.../icon.png"
+                      className={`w-full px-3 py-2 text-sm rounded-lg outline-none border transition-colors ${
+                        isDark
+                          ? 'bg-[#303134] border-[#3c4043] focus:border-[#8ab4f8] text-[#e8eaed]'
+                          : 'bg-white border-[#dadce0] focus:border-[#1a73e8] text-[#202124]'
+                      }`}
+                    />
+                  </div>
+                </>
               )}
 
               <div className="flex items-center justify-end gap-2 mt-4 select-none">
@@ -1681,6 +1946,25 @@ export default function Newtab() {
                     setEditingShortcut({ ...editingShortcut, url: e.target.value })
                   }
                   required
+                  className={`w-full px-3 py-2 text-sm rounded-lg outline-none border transition-colors ${
+                    isDark
+                      ? 'bg-[#303134] border-[#3c4043] focus:border-[#8ab4f8] text-[#e8eaed]'
+                      : 'bg-white border-[#dadce0] focus:border-[#1a73e8] text-[#202124]'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-normal text-[#9aa0a6] mb-1">
+                  Иконка (необязательно, URL или data:)
+                </label>
+                <input
+                  type="text"
+                  value={editingShortcut.favicon || ''}
+                  onChange={(e) =>
+                    setEditingShortcut({ ...editingShortcut, favicon: e.target.value })
+                  }
+                  placeholder="https://.../icon.png"
                   className={`w-full px-3 py-2 text-sm rounded-lg outline-none border transition-colors ${
                     isDark
                       ? 'bg-[#303134] border-[#3c4043] focus:border-[#8ab4f8] text-[#e8eaed]'
