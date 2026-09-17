@@ -1,8 +1,91 @@
+import { ChromeGridItem, ChromeSection } from '../types';
+
+export const CHROME_NTP_SECTIONS_KEY = 'chrome_ntp_sections_v3';
+export const CHROME_NTP_ITEMS_KEY = 'chrome_ntp_grid_items_v2';
+
+export const DEFAULT_SECTIONS: ChromeSection[] = [
+  {
+    id: 'sec-main',
+    title: 'Основное',
+    items: [
+      {
+        id: 'sc-gmail',
+        type: 'shortcut',
+        title: 'Gmail',
+        url: 'https://mail.google.com',
+      },
+      {
+        id: 'sc-wiki',
+        type: 'shortcut',
+        title: 'Википедия',
+        url: 'https://ru.wikipedia.org',
+      },
+      {
+        id: 'sc-translate',
+        type: 'shortcut',
+        title: 'Переводчик',
+        url: 'https://translate.google.com',
+      },
+      {
+        id: 'sc-maps',
+        type: 'shortcut',
+        title: 'Карты',
+        url: 'https://maps.google.com',
+      },
+    ],
+  },
+  {
+    id: 'sec-work',
+    title: 'Рабочее пространство',
+    items: [
+      {
+        id: 'f-dev',
+        type: 'folder',
+        title: 'Разработка',
+        items: [
+          { id: 'dev-gh', title: 'GitHub', url: 'https://github.com' },
+          { id: 'dev-so', title: 'StackOverflow', url: 'https://stackoverflow.com' },
+          { id: 'dev-ai', title: 'Claude AI', url: 'https://claude.ai' },
+          { id: 'dev-mdn', title: 'MDN Web Docs', url: 'https://developer.mozilla.org' },
+          { id: 'dev-vercel', title: 'Vercel', url: 'https://vercel.com' },
+        ],
+      },
+      {
+        id: 'sc-figma',
+        type: 'shortcut',
+        title: 'Figma',
+        url: 'https://www.figma.com',
+      },
+      {
+        id: 'sc-notion',
+        type: 'shortcut',
+        title: 'Notion',
+        url: 'https://www.notion.so',
+      },
+    ],
+  },
+  {
+    id: 'sec-media',
+    title: 'Медиа и отдых',
+    items: [
+      {
+        id: 'f-media',
+        type: 'folder',
+        title: 'Медиа',
+        items: [
+          { id: 'med-yt', title: 'YouTube', url: 'https://www.youtube.com' },
+          { id: 'med-tg', title: 'Telegram', url: 'https://web.telegram.org' },
+          { id: 'med-reddit', title: 'Reddit', url: 'https://www.reddit.com' },
+          { id: 'med-spotify', title: 'Spotify', url: 'https://open.spotify.com' },
+        ],
+      },
+    ],
+  },
+];
+
 /**
  * Safe chrome.storage.local helper with localStorage fallback
- * Works both inside WebExtension runtime and in standalone browser tab
  */
-
 export async function getStorageItem<T>(key: string, defaultValue: T): Promise<T> {
   try {
     if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
@@ -31,4 +114,30 @@ export async function setStorageItem<T>(key: string, value: T): Promise<void> {
   } catch (error) {
     console.warn(`[storage] Error writing key "${key}":`, error);
   }
+}
+
+/**
+ * Loads sections from storage with migration fallback from single grid items
+ */
+export async function loadSectionsFromStorage(): Promise<ChromeSection[]> {
+  const savedSections = await getStorageItem<ChromeSection[] | null>(CHROME_NTP_SECTIONS_KEY, null);
+  if (savedSections && Array.isArray(savedSections) && savedSections.length > 0) {
+    return savedSections;
+  }
+
+  // Fallback: check if previous v2 grid items exist and migrate them to a section
+  const previousItems = await getStorageItem<ChromeGridItem[] | null>(CHROME_NTP_ITEMS_KEY, null);
+  if (previousItems && Array.isArray(previousItems) && previousItems.length > 0) {
+    const migrated: ChromeSection[] = [
+      {
+        id: 'sec-migrated',
+        title: 'Мои закладки',
+        items: previousItems,
+      },
+    ];
+    await setStorageItem(CHROME_NTP_SECTIONS_KEY, migrated);
+    return migrated;
+  }
+
+  return DEFAULT_SECTIONS;
 }
