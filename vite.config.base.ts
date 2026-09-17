@@ -27,7 +27,11 @@ export const baseManifest = {
 
 export const baseBuildOptions: BuildOptions = {
   sourcemap: isDev,
-  emptyOutDir: !isDev
+  emptyOutDir: !isDev,
+  target: 'es2022',
+  minify: isDev ? false : 'esbuild',
+  cssMinify: true,
+  reportCompressedSize: false,
 }
 
 export default defineConfig({
@@ -38,5 +42,10 @@ export default defineConfig({
     stripDevIcons(isDev),
     crxI18n({ localize, src: './src/locales' }),
   ],
+  esbuild: {
+    drop: isDev ? [] : ['console', 'debugger'],
+    legalComments: 'none',
+  },
   publicDir: resolve(__dirname, 'public'),
 });
+

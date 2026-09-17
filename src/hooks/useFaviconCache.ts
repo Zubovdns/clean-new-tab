@@ -31,17 +31,24 @@ export function useFaviconCache() {
   const getCachedFavicon = useCallback(
     (rawUrl: string, itemFavicon?: string): string => {
       if (itemFavicon) return itemFavicon;
-      const domain = getDomain(rawUrl);
+      const cleanUrl = rawUrl.trim();
+      const domain = getDomain(cleanUrl);
       let origin = '';
       try {
-        origin = new URL(rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`).origin;
+        origin = new URL(cleanUrl.startsWith('http') ? cleanUrl : `https://${cleanUrl}`).origin;
       } catch {
         // ignore
       }
+      const noSlash = cleanUrl.replace(/\/$/, '');
+      const withSlash = `${noSlash}/`;
+
       return (
-        faviconCache[rawUrl] ||
-        faviconCache[domain] ||
+        faviconCache[cleanUrl] ||
+        faviconCache[noSlash] ||
+        faviconCache[withSlash] ||
         (origin ? faviconCache[origin] : '') ||
+        (origin ? faviconCache[`${origin}/`] : '') ||
+        faviconCache[domain] ||
         ''
       );
     },

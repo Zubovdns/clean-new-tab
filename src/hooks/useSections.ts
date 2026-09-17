@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ChromeBookmark,
   ChromeFolder,
@@ -18,6 +18,7 @@ import { getDomain } from '@utils/favicon';
 export function useSections() {
   const [sections, setSections] = useState<ChromeSection[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const hasRequestedFaviconsRef = useRef(false);
 
   // Load saved sections on mount
   useEffect(() => {
@@ -27,17 +28,19 @@ export function useSections() {
     });
   }, []);
 
-  // Request background service worker to resolve and cache favicons for all bookmarks
+  // Request background service worker to resolve and cache favicons once after loading
   useEffect(() => {
-    if (!sections || sections.length === 0) return;
+    if (!isLoaded || !sections || sections.length === 0 || hasRequestedFaviconsRef.current) return;
+    hasRequestedFaviconsRef.current = true;
+
     const urls: string[] = [];
     for (const sec of sections) {
       for (const item of sec.items) {
-        if (item.type === 'shortcut' && item.url) {
+        if (item.type === 'shortcut' && item.url && !item.favicon) {
           urls.push(item.url);
         } else if (item.type === 'folder' && Array.isArray(item.items)) {
           for (const b of item.items) {
-            if (b.url) urls.push(b.url);
+            if (b.url && !b.favicon) urls.push(b.url);
           }
         }
       }
@@ -50,7 +53,7 @@ export function useSections() {
         // ignore
       }
     }
-  }, [sections]);
+  }, [isLoaded, sections]);
 
   // Save sections helper
   const saveSections = useCallback((updated: ChromeSection[]) => {

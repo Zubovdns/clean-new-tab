@@ -158,6 +158,8 @@ export async function saveFaviconToCache(key: string, faviconUrl: string): Promi
   await setStorageItem(CHROME_NTP_FAVICON_CACHE_KEY, cache);
 }
 
+const MAX_FAVICON_CACHE_ENTRIES = 200;
+
 export async function saveMultipleFaviconsToCache(entries: Record<string, string>): Promise<void> {
   const keys = Object.keys(entries);
   if (keys.length === 0) return;
@@ -169,6 +171,17 @@ export async function saveMultipleFaviconsToCache(entries: Record<string, string
       changed = true;
     }
   }
+
+  // Prevent unbounded cache growth to preserve RAM and storage quota
+  const allKeys = Object.keys(cache);
+  if (allKeys.length > MAX_FAVICON_CACHE_ENTRIES) {
+    const toRemove = allKeys.slice(0, allKeys.length - MAX_FAVICON_CACHE_ENTRIES);
+    for (const k of toRemove) {
+      delete cache[k];
+    }
+    changed = true;
+  }
+
   if (changed) {
     await setStorageItem(CHROME_NTP_FAVICON_CACHE_KEY, cache);
   }

@@ -224,4 +224,6 @@ export function AddItemModal({
   );
 }
 
-export default AddItemModal;
+export const AddItemModalMemo = React.memo(AddItemModal);
+export default AddItemModalMemo;
+

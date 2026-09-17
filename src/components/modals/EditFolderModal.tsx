@@ -133,4 +133,6 @@ export function EditFolderModal({
   );
 }
 
-export default EditFolderModal;
+export const EditFolderModalMemo = React.memo(EditFolderModal);
+export default EditFolderModalMemo;
+

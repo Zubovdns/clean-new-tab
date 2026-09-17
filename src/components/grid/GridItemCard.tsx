@@ -5,6 +5,7 @@ import {
   EditingShortcutData,
 } from '@app-types';
 import FaviconImage from '@components/common/FaviconImage';
+import Icon from '@components/common/Icon';
 
 export interface GridItemCardProps {
   item: ChromeGridItem;
@@ -99,19 +100,17 @@ export function GridItemCard({
               ))}
             </div>
           ) : (
-            <span
-              className={`material-symbols-outlined text-[24px] pointer-events-none ${
-                isDark ? 'text-[#8ab4f8]' : 'text-[#1a73e8]'
-              }`}
-            >
-              folder
-            </span>
+            <Icon
+              name="folder"
+              size={24}
+              className={isDark ? 'text-[#8ab4f8]' : 'text-[#1a73e8]'}
+            />
           )
         ) : (
           <FaviconImage
             url={item.url}
             title={item.title}
-            size={64}
+            size={32}
             isDark={isDark}
             className="w-6 h-6 object-contain pointer-events-none"
             letterClassName={isDark ? 'text-[#8ab4f8] text-[18px]' : 'text-[#1a73e8] text-[18px]'}
@@ -145,7 +144,7 @@ export function GridItemCard({
             isDark ? 'hover:bg-[#3c4043] text-[#9aa0a6]' : 'hover:bg-[#e8eaed] text-[#5f6368]'
           }`}
         >
-          <span className="material-symbols-outlined text-[16px]">more_vert</span>
+          <Icon name="more_vert" size={16} />
         </button>
 
         {/* Context Dropdown Menu */}
@@ -174,7 +173,7 @@ export function GridItemCard({
                     isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">edit</span>
+                  <Icon name="edit" size={16} />
                   <span>Изменить папку</span>
                 </button>
                 <button
@@ -187,7 +186,7 @@ export function GridItemCard({
                     isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                  <Icon name="delete" size={16} />
                   <span>Удалить папку</span>
                 </button>
               </>
@@ -209,7 +208,7 @@ export function GridItemCard({
                     isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">edit</span>
+                  <Icon name="edit" size={16} />
                   <span>Изменить ярлык</span>
                 </button>
                 <button
@@ -222,7 +221,7 @@ export function GridItemCard({
                     isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">close</span>
+                  <Icon name="close" size={16} />
                   <span>Удалить</span>
                 </button>
               </>
@@ -234,4 +233,6 @@ export function GridItemCard({
   );
 }
 
-export default GridItemCard;
+export const GridItemCardMemo = React.memo(GridItemCard);
+export default GridItemCardMemo;
+

@@ -16,7 +16,7 @@ export interface FaviconImageProps {
 export function FaviconImage({
   url,
   title,
-  size = 64,
+  size = 32,
   className = 'w-6 h-6 object-contain pointer-events-none',
   isDark = true,
   letterClassName = '',
@@ -75,6 +75,8 @@ export function FaviconImage({
       src={candidates[candidateIndex]}
       alt={title}
       draggable={false}
+      loading="lazy"
+      decoding="async"
       className={className}
       onError={nextCandidate}
       onLoad={handleLoad}
@@ -82,4 +84,6 @@ export function FaviconImage({
   );
 }
 
-export default FaviconImage;
+export const FaviconImageMemo = React.memo(FaviconImage);
+export default FaviconImageMemo;
+

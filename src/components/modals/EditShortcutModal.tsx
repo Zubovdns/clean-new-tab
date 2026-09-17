@@ -166,4 +166,6 @@ export function EditShortcutModal({
   );
 }
 
-export default EditShortcutModal;
+export const EditShortcutModalMemo = React.memo(EditShortcutModal);
+export default EditShortcutModalMemo;
+

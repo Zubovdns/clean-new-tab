@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { ChromeSection, ChromeFolder, EditingShortcutData } from '@app-types';
 import FaviconImage from '@components/common/FaviconImage';
+import Icon from '@components/common/Icon';
 
 export interface FolderModalProps {
   isOpen: boolean;
@@ -98,9 +99,7 @@ export function FolderModal({
         {/* Folder Header */}
         <div className="flex items-center justify-between mb-5 select-none">
           <div className="flex items-center gap-2.5">
-            <span className="material-symbols-outlined text-[#8ab4f8] text-[24px]">
-              folder
-            </span>
+            <Icon name="folder" size={24} className="text-[#8ab4f8]" />
             <h2 className="text-[18px] font-medium">{activeFolder.title}</h2>
             <span className="text-xs text-[#9aa0a6] font-normal">
               ({activeFolder.items.length})
@@ -113,7 +112,7 @@ export function FolderModal({
               isDark ? 'hover:bg-[#3c4043] text-[#9aa0a6]' : 'hover:bg-[#f1f3f4] text-[#5f6368]'
             }`}
           >
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <Icon name="close" size={20} />
           </button>
         </div>
 
@@ -153,7 +152,7 @@ export function FolderModal({
                   <FaviconImage
                     url={b.url}
                     title={b.title}
-                    size={48}
+                    size={32}
                     isDark={isDark}
                     className="w-5 h-5 object-contain pointer-events-none"
                     letterClassName={isDark ? 'text-[#8ab4f8] text-[16px]' : 'text-[#1a73e8] text-[16px]'}
@@ -187,7 +186,7 @@ export function FolderModal({
                       isDark ? 'hover:bg-[#3c4043] text-[#9aa0a6]' : 'hover:bg-[#e8eaed] text-[#5f6368]'
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[14px]">more_vert</span>
+                    <Icon name="more_vert" size={14} />
                   </button>
 
                   {/* Context Menu inside folder */}
@@ -217,7 +216,7 @@ export function FolderModal({
                           isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
                         }`}
                       >
-                        <span className="material-symbols-outlined text-[15px]">edit</span>
+                        <Icon name="edit" size={15} />
                         <span>Изменить</span>
                       </button>
                       <button
@@ -230,7 +229,7 @@ export function FolderModal({
                           isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
                         }`}
                       >
-                        <span className="material-symbols-outlined text-[15px]">close</span>
+                        <Icon name="close" size={15} />
                         <span>Удалить</span>
                       </button>
                     </div>
@@ -253,7 +252,7 @@ export function FolderModal({
                 isDark ? 'bg-[#303134] text-[#e8eaed]' : 'bg-[#f1f3f4] text-[#5f6368]'
               }`}
             >
-              <span className="material-symbols-outlined text-[20px]">add</span>
+              <Icon name="add" size={20} />
             </div>
             <span
               className={`text-[11px] font-normal truncate w-full text-center px-0.5 ${
@@ -269,4 +268,6 @@ export function FolderModal({
   );
 }
 
-export default FolderModal;
+export const FolderModalMemo = React.memo(FolderModal);
+export default FolderModalMemo;
+

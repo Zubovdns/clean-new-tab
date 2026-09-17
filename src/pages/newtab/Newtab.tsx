@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ActiveFolderInfo,
   ChromeFolder,
@@ -16,6 +16,7 @@ import AddItemModal from '@components/modals/AddItemModal';
 import EditShortcutModal from '@components/modals/EditShortcutModal';
 import EditFolderModal from '@components/modals/EditFolderModal';
 import FolderModal from '@components/modals/FolderModal';
+import Icon from '@components/common/Icon';
 
 export default function Newtab() {
   const isDark = useTheme();
@@ -113,19 +114,19 @@ export default function Newtab() {
   // SECTION ACTIONS
   // =========================================================================
 
-  const handleStartEditingSection = (sec: ChromeSection) => {
+  const handleStartEditingSection = useCallback((sec: ChromeSection) => {
     setEditingSectionId(sec.id);
     setEditingSectionTitle(sec.title);
     setActiveMenuId(null);
-  };
+  }, []);
 
-  const handleSaveEditingSection = () => {
+  const handleSaveEditingSection = useCallback(() => {
     if (!editingSectionId) return;
     updateSectionTitle(editingSectionId, editingSectionTitle);
     setEditingSectionId(null);
-  };
+  }, [editingSectionId, editingSectionTitle, updateSectionTitle]);
 
-  const handleDeleteSection = (sectionId: string) => {
+  const handleDeleteSection = useCallback((sectionId: string) => {
     const sec = sections.find((s) => s.id === sectionId);
     if (!sec) return;
 
@@ -139,36 +140,45 @@ export default function Newtab() {
       setActiveFolderInfo(null);
     }
     setActiveMenuId(null);
-  };
+  }, [sections, deleteSection, activeFolderInfo]);
 
-  const handleOpenAddModal = (sectionId: string, folderId: string | null = null) => {
+  const handleOpenAddModal = useCallback((sectionId: string, folderId: string | null = null) => {
     setTargetSectionId(sectionId);
     setTargetFolderId(folderId);
     setIsAddModalOpen(true);
-  };
+  }, []);
 
   // =========================================================================
   // SECTION DRAG & DROP
   // =========================================================================
 
-  const handleSectionDragStart = (e: React.DragEvent, index: number) => {
+  const handleSectionDragStart = useCallback((e: React.DragEvent, index: number) => {
     isDraggingRef.current = true;
     draggedSectionIndexRef.current = index;
     setDraggedSectionIndex(index);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', `sec:${index}`);
-  };
+  }, []);
 
-  const handleSectionDragOver = (e: React.DragEvent, index: number) => {
+  const handleSectionDragOver = useCallback((e: React.DragEvent, index: number) => {
     if (draggedSectionIndexRef.current === null) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     if (dragOverSectionIndex !== index) {
       setDragOverSectionIndex(index);
     }
-  };
+  }, [dragOverSectionIndex]);
 
-  const handleSectionDrop = (e: React.DragEvent, targetIndex: number) => {
+  const handleSectionDragEnd = useCallback(() => {
+    draggedSectionIndexRef.current = null;
+    setDraggedSectionIndex(null);
+    setDragOverSectionIndex(null);
+    setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 100);
+  }, []);
+
+  const handleSectionDrop = useCallback((e: React.DragEvent, targetIndex: number) => {
     if (draggedSectionIndexRef.current === null) return;
     e.preventDefault();
     e.stopPropagation();
@@ -178,22 +188,13 @@ export default function Newtab() {
       reorderSections(sourceIndex, targetIndex);
     }
     handleSectionDragEnd();
-  };
-
-  const handleSectionDragEnd = () => {
-    draggedSectionIndexRef.current = null;
-    setDraggedSectionIndex(null);
-    setDragOverSectionIndex(null);
-    setTimeout(() => {
-      isDraggingRef.current = false;
-    }, 100);
-  };
+  }, [reorderSections, handleSectionDragEnd]);
 
   // =========================================================================
   // ITEM DRAG & DROP
   // =========================================================================
 
-  const handleItemDragStart = (e: React.DragEvent, sectionId: string, itemIndex: number) => {
+  const handleItemDragStart = useCallback((e: React.DragEvent, sectionId: string, itemIndex: number) => {
     e.stopPropagation();
     isDraggingRef.current = true;
     const coords = { sectionId, itemIndex };
@@ -201,9 +202,9 @@ export default function Newtab() {
     setDraggedItemCoords(coords);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', `item:${sectionId}:${itemIndex}`);
-  };
+  }, []);
 
-  const handleItemDragOver = (
+  const handleItemDragOver = useCallback((
     e: React.DragEvent,
     sectionId: string,
     itemIndex: number,
@@ -243,9 +244,20 @@ export default function Newtab() {
     ) {
       setDragOverItemCoords({ sectionId, itemIndex });
     }
-  };
+  }, [sections, dragOverFolderTargetId, dragOverItemCoords]);
 
-  const handleItemDrop = (
+  const handleItemDragEnd = useCallback(() => {
+    draggedItemCoordsRef.current = null;
+    setDraggedItemCoords(null);
+    setDragOverItemCoords(null);
+    setDragOverFolderTargetId(null);
+    setDragOverSectionTargetId(null);
+    setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 100);
+  }, []);
+
+  const handleItemDrop = useCallback((
     e: React.DragEvent,
     targetSectionId: string,
     targetItemIndex: number,
@@ -289,9 +301,9 @@ export default function Newtab() {
     // Move ACROSS sections
     moveItemAcrossSections(source.sectionId, source.itemIndex, targetSectionId, targetItemIndex);
     handleItemDragEnd();
-  };
+  }, [sections, moveItemToFolder, reorderItemsInSameSection, moveItemAcrossSections, handleItemDragEnd]);
 
-  const handleSectionBodyDragOver = (e: React.DragEvent, sectionId: string) => {
+  const handleSectionBodyDragOver = useCallback((e: React.DragEvent, sectionId: string) => {
     if (draggedSectionIndexRef.current !== null) return;
     if (draggedItemCoordsRef.current === null) return;
     if (dragOverFolderTargetId || dragOverItemCoords) return;
@@ -301,9 +313,9 @@ export default function Newtab() {
     if (dragOverSectionTargetId !== sectionId) {
       setDragOverSectionTargetId(sectionId);
     }
-  };
+  }, [dragOverFolderTargetId, dragOverItemCoords, dragOverSectionTargetId]);
 
-  const handleSectionBodyDrop = (e: React.DragEvent, targetSectionId: string) => {
+  const handleSectionBodyDrop = useCallback((e: React.DragEvent, targetSectionId: string) => {
     if (draggedSectionIndexRef.current !== null) return;
     const source = draggedItemCoordsRef.current;
     if (!source) {
@@ -321,36 +333,25 @@ export default function Newtab() {
 
     moveItemToEndOfSection(source.sectionId, source.itemIndex, targetSectionId);
     handleItemDragEnd();
-  };
-
-  const handleItemDragEnd = () => {
-    draggedItemCoordsRef.current = null;
-    setDraggedItemCoords(null);
-    setDragOverItemCoords(null);
-    setDragOverFolderTargetId(null);
-    setDragOverSectionTargetId(null);
-    setTimeout(() => {
-      isDraggingRef.current = false;
-    }, 100);
-  };
+  }, [moveItemToEndOfSection, handleItemDragEnd]);
 
   // =========================================================================
   // CLICKS
   // =========================================================================
 
-  const handleItemClick = (item: ChromeGridItem, sectionId: string) => {
+  const handleItemClick = useCallback((item: ChromeGridItem, sectionId: string) => {
     if (isDraggingRef.current) return;
     if (item.type === 'folder') {
       setActiveFolderInfo({ sectionId, folderId: item.id });
     } else {
       window.location.href = item.url;
     }
-  };
+  }, []);
 
-  const handleBookmarkClick = (url: string) => {
+  const handleBookmarkClick = useCallback((url: string) => {
     if (isDraggingRef.current) return;
     window.location.href = url;
-  };
+  }, []);
 
   if (!isLoaded) {
     return <div className={`min-h-screen ${isDark ? 'bg-[#202124]' : 'bg-white'}`} />;
@@ -428,7 +429,7 @@ export default function Newtab() {
                 : 'border-[#dadce0] bg-white hover:bg-[#f1f3f4] text-[#1a73e8] hover:border-[#1a73e8]'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">add_circle</span>
+            <Icon name="add_circle" size={18} />
             <span>Добавить секцию</span>
           </button>
         </div>

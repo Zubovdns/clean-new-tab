@@ -6,6 +6,7 @@ import {
   EditingShortcutData,
 } from '@app-types';
 import GridItemCard from '@components/grid/GridItemCard';
+import Icon from '@components/common/Icon';
 
 export interface SectionCardProps {
   section: ChromeSection;
@@ -126,9 +127,7 @@ export function SectionCard({
             }`}
             title="Перетащить секцию"
           >
-            <span className="material-symbols-outlined text-[20px] leading-none block">
-              drag_indicator
-            </span>
+            <Icon name="drag_indicator" size={20} className="leading-none block" />
           </div>
 
           {/* Section Title (Inline Editable) */}
@@ -171,13 +170,13 @@ export function SectionCard({
               >
                 {section.items.length}
               </span>
-              <span
-                className={`material-symbols-outlined text-[15px] opacity-0 group-hover/title:opacity-100 transition-opacity ${
+              <Icon
+                name="edit"
+                size={15}
+                className={`opacity-0 group-hover/title:opacity-100 transition-opacity ${
                   isDark ? 'text-[#9aa0a6]' : 'text-[#5f6368]'
                 }`}
-              >
-                edit
-              </span>
+              />
             </div>
           )}
         </div>
@@ -198,7 +197,7 @@ export function SectionCard({
                 : 'hover:bg-[#e8eaed] text-[#5f6368] hover:text-[#202124]'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">add</span>
+            <Icon name="add" size={18} />
           </button>
 
           {/* Section 3-dots Menu */}
@@ -213,7 +212,7 @@ export function SectionCard({
                   : 'hover:bg-[#e8eaed] text-[#5f6368]'
               }`}
             >
-              <span className="material-symbols-outlined text-[16px]">more_vert</span>
+              <Icon name="more_vert" size={16} />
             </button>
 
             {isSecMenuOpen && (
@@ -231,7 +230,7 @@ export function SectionCard({
                     isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">edit</span>
+                  <Icon name="edit" size={16} />
                   <span>Переименовать секцию</span>
                 </button>
                 <button
@@ -244,7 +243,7 @@ export function SectionCard({
                     isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">add</span>
+                  <Icon name="add" size={16} />
                   <span>Добавить элемент</span>
                 </button>
                 <button
@@ -254,7 +253,7 @@ export function SectionCard({
                     isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                  <Icon name="delete" size={16} />
                   <span>Удалить секцию</span>
                 </button>
               </div>
@@ -318,7 +317,7 @@ export function SectionCard({
               isDark ? 'bg-[#303134] text-[#e8eaed]' : 'bg-[#f1f3f4] text-[#5f6368]'
             }`}
           >
-            <span className="material-symbols-outlined text-[20px]">add</span>
+            <Icon name="add" size={20} />
           </div>
           <span
             className={`text-[12px] font-normal truncate w-full text-center px-1 ${
@@ -333,4 +332,6 @@ export function SectionCard({
   );
 }
 
-export default SectionCard;
+export const SectionCardMemo = React.memo(SectionCard);
+export default SectionCardMemo;
+
