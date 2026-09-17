@@ -21,7 +21,10 @@
       "@assets/*": ["./src/assets/*"],
       "@locales/*": ["./src/locales/*"],
       "@pages/*": ["./src/pages/*"],
-      "@utils/*": ["./src/utils/*"]
+      "@utils/*": ["./src/utils/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@app-types/*": ["./src/types/*"],
+      "@app-types": ["./src/types"]
     }
   },
   "include": [

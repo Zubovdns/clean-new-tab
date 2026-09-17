@@ -27,3 +27,24 @@ export interface ChromeSection {
   title: string;
   items: ChromeGridItem[];
 }
+
+export interface EditingShortcutData {
+  id: string;
+  title: string;
+  url: string;
+  sectionId: string;
+  folderId?: string;
+  favicon?: string;
+}
+
+export interface EditingFolderData {
+  id: string;
+  title: string;
+  sectionId: string;
+}
+
+export interface ActiveFolderInfo {
+  sectionId: string;
+  folderId: string;
+}
+
