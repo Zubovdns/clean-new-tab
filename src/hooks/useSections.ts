@@ -55,13 +55,11 @@ export function useSections() {
     }
   }, [isLoaded, sections]);
 
-  // Save sections helper
   const saveSections = useCallback((updated: ChromeSection[]) => {
     setSections(updated);
     setStorageItem(CHROME_NTP_SECTIONS_KEY, updated);
   }, []);
 
-  // Section CRUD
   const createSection = useCallback((title: string) => {
     const trimmedTitle = title.trim();
     if (!trimmedTitle) return;
@@ -94,7 +92,6 @@ export function useSections() {
     saveSections(updated);
   }, [sections, saveSections]);
 
-  // Item Add
   const addFolder = useCallback((sectionId: string, title: string) => {
     const trimmed = title.trim();
     if (!trimmed) return;
@@ -169,7 +166,6 @@ export function useSections() {
     }
   }, [sections, saveSections]);
 
-  // Item Edit
   const saveEditShortcut = useCallback((data: EditingShortcutData) => {
     let url = data.url.trim();
     if (!url) return;
@@ -293,7 +289,6 @@ export function useSections() {
     saveSections(updated);
   }, [sections, saveSections]);
 
-  // Drag & Drop Helpers
   const moveItemToFolder = useCallback((
     sourceSectionId: string,
     sourceItemIndex: number,

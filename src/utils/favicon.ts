@@ -1,5 +1,5 @@
 /**
- * Favicon helper functions and URL candidate resolution
+ * Favicon helper functions and candidate URL resolution
  */
 
 export function getDomain(rawUrl: string): string {
@@ -33,15 +33,12 @@ export function getFaviconCandidates(
   const candidates: string[] = [];
   const domain = getDomain(targetUrl);
 
-  // 0. Cached favicon from tab capture, background scraper, or custom override
-  // (base64 Data URI or exact tab URL - works offline & bypasses CORS/CORP!)
+  // 0. User override or runtime cache from active tabs
   if (cachedFavicon) {
     candidates.push(cachedFavicon);
   }
 
-  // 1. Google FaviconV2 API (Supports FULL pageUrl including subdomains and subpaths,
-  // e.g. gemini.google.com/app, learn.modsen.app/my-plan)
-  // This returns the exact service icon (Gemini sparkle, Modsen Education icon, etc.)
+  // 1. Google FaviconV2 API (resolves specific subdomains and paths)
   if (domain && !domain.includes('localhost') && !domain.startsWith('127.')) {
     candidates.push(
       `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(targetUrl)}&size=${size}`
@@ -49,7 +46,6 @@ export function getFaviconCandidates(
   }
 
   // 2. Chromium native _favicon endpoint
-  // This accesses the exact same internal Chromium FaviconSource that chrome://favicon2 uses on Chrome NTP!
   const isChromium =
     typeof chrome !== 'undefined' &&
     !!chrome.runtime?.getURL &&
@@ -62,12 +58,11 @@ export function getFaviconCandidates(
       url.searchParams.set('size', size.toString());
       candidates.push(url.toString());
     } catch {
-      // ignore
+      // ignore invalid URL construction
     }
   }
 
-  // 3. Direct site favicon at origin root (https://domain/favicon.ico) for EXACT domain ONLY
-  // Note: NEVER fall back to rootDomain here because subdomains (gemini.google.com) would fetch google.com/favicon.ico (Google "G")!
+  // 3. Direct favicon at origin root (preserves subdomain icons)
   if (
     domain &&
     !domain.includes('localhost') &&
@@ -82,12 +77,12 @@ export function getFaviconCandidates(
     }
   }
 
-  // 4. DuckDuckGo Favicon CDN (exact domain only)
+  // 4. DuckDuckGo Favicon CDN
   if (domain) {
     candidates.push(`https://icons.duckduckgo.com/ip3/${domain}.ico`);
   }
 
-  // 5. Icon Horse CDN (exact domain only)
+  // 5. Icon Horse CDN
   if (domain) {
     candidates.push(`https://icon.horse/icon/${domain}`);
   }

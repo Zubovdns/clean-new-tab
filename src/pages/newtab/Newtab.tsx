@@ -41,34 +41,23 @@ export default function Newtab() {
     reorderFolderItems,
   } = useSections();
 
-  // Active folder opened in modal popup
   const [activeFolderInfo, setActiveFolderInfo] = useState<ActiveFolderInfo | null>(null);
-
-  // Add Item Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [targetSectionId, setTargetSectionId] = useState<string>('');
   const [targetFolderId, setTargetFolderId] = useState<string | null>(null);
-
-  // Add Section Modal
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
 
-  // Inline Section Title Editing
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionTitle, setEditingSectionTitle] = useState('');
-
-  // Edit Modals
   const [editingShortcut, setEditingShortcut] = useState<EditingShortcutData | null>(null);
   const [editingFolder, setEditingFolder] = useState<EditingFolderData | null>(null);
 
-  // 3-dots Context Menu State
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
-  // Drag and Drop for SECTIONS
   const [draggedSectionIndex, setDraggedSectionIndex] = useState<number | null>(null);
   const [dragOverSectionIndex, setDragOverSectionIndex] = useState<number | null>(null);
   const draggedSectionIndexRef = useRef<number | null>(null);
 
-  // Drag and Drop for ITEMS
   const [draggedItemCoords, setDraggedItemCoords] = useState<{
     sectionId: string;
     itemIndex: number;
@@ -87,7 +76,7 @@ export default function Newtab() {
 
   const isDraggingRef = useRef(false);
 
-  // Global Escape key listener to close modals
+  // Close active modals and dropdowns on Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -104,15 +93,10 @@ export default function Newtab() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Find currently open folder in modal
   const activeSection = sections.find((s) => s.id === activeFolderInfo?.sectionId) || null;
   const activeFolder = (activeSection?.items.find(
     (item): item is ChromeFolder => item.id === activeFolderInfo?.folderId && item.type === 'folder'
   ) as ChromeFolder | undefined) || null;
-
-  // =========================================================================
-  // SECTION ACTIONS
-  // =========================================================================
 
   const handleStartEditingSection = useCallback((sec: ChromeSection) => {
     setEditingSectionId(sec.id);
@@ -147,10 +131,6 @@ export default function Newtab() {
     setTargetFolderId(folderId);
     setIsAddModalOpen(true);
   }, []);
-
-  // =========================================================================
-  // SECTION DRAG & DROP
-  // =========================================================================
 
   const handleSectionDragStart = useCallback((e: React.DragEvent, index: number) => {
     isDraggingRef.current = true;
@@ -190,10 +170,6 @@ export default function Newtab() {
     handleSectionDragEnd();
   }, [reorderSections, handleSectionDragEnd]);
 
-  // =========================================================================
-  // ITEM DRAG & DROP
-  // =========================================================================
-
   const handleItemDragStart = useCallback((e: React.DragEvent, sectionId: string, itemIndex: number) => {
     e.stopPropagation();
     isDraggingRef.current = true;
@@ -221,6 +197,7 @@ export default function Newtab() {
     const sourceSec = sections.find((s) => s.id === source.sectionId);
     const sourceItem = sourceSec?.items[source.itemIndex];
 
+    // Detect hover over a folder to support drop-into-folder
     if (
       sourceItem &&
       sourceItem.type === 'shortcut' &&
@@ -280,7 +257,7 @@ export default function Newtab() {
       return;
     }
 
-    // Drop Shortcut INTO Folder
+    // Nest shortcut into folder when dropped directly on a folder tile
     if (
       sourceItem.type === 'shortcut' &&
       targetItem.type === 'folder' &&
@@ -291,14 +268,14 @@ export default function Newtab() {
       return;
     }
 
-    // Reordering within SAME section
+    // Reorder within same section
     if (source.sectionId === targetSectionId) {
       reorderItemsInSameSection(targetSectionId, source.itemIndex, targetItemIndex);
       handleItemDragEnd();
       return;
     }
 
-    // Move ACROSS sections
+    // Transfer item across sections
     moveItemAcrossSections(source.sectionId, source.itemIndex, targetSectionId, targetItemIndex);
     handleItemDragEnd();
   }, [sections, moveItemToFolder, reorderItemsInSameSection, moveItemAcrossSections, handleItemDragEnd]);
@@ -335,10 +312,6 @@ export default function Newtab() {
     handleItemDragEnd();
   }, [moveItemToEndOfSection, handleItemDragEnd]);
 
-  // =========================================================================
-  // CLICKS
-  // =========================================================================
-
   const handleItemClick = useCallback((item: ChromeGridItem, sectionId: string) => {
     if (isDraggingRef.current) return;
     if (item.type === 'folder') {
@@ -359,7 +332,7 @@ export default function Newtab() {
 
   return (
     <div
-      className={`min-h-screen flex flex-col items-center justify-start font-['Roboto',sans-serif] transition-colors duration-150 py-12 px-6 select-none ${
+      className={`min-h-screen flex flex-col items-center justify-start font-sans transition-colors duration-150 py-12 px-6 select-none ${
         isDark ? 'bg-[#202124] text-[#e8eaed]' : 'bg-white text-[#202124]'
       }`}
       onClick={() => {
@@ -367,7 +340,6 @@ export default function Newtab() {
         if (editingSectionId) handleSaveEditingSection();
       }}
     >
-      {/* Container for vertical sections */}
       <div className="w-full max-w-[820px] flex flex-col gap-8">
         {sections.map((section, sIdx) => {
           const isDraggingThisSection = draggedSectionIndex === sIdx;
@@ -418,7 +390,7 @@ export default function Newtab() {
           );
         })}
 
-        {/* "+ Добавить секцию" Button at Bottom */}
+        {/* Add section button */}
         <div className="flex justify-center pt-2 pb-6">
           <button
             type="button"
@@ -435,7 +407,6 @@ export default function Newtab() {
         </div>
       </div>
 
-      {/* Folder Popup Modal */}
       <FolderModal
         isOpen={Boolean(activeFolder && activeSection)}
         isDark={isDark}
@@ -452,7 +423,6 @@ export default function Newtab() {
         setActiveMenuId={setActiveMenuId}
       />
 
-      {/* Add Section Modal */}
       <AddSectionModal
         isOpen={isAddSectionModalOpen}
         isDark={isDark}
@@ -460,7 +430,6 @@ export default function Newtab() {
         onCreate={createSection}
       />
 
-      {/* Add Item Modal */}
       <AddItemModal
         isOpen={isAddModalOpen}
         isDark={isDark}
@@ -472,7 +441,6 @@ export default function Newtab() {
         onSaveFolder={addFolder}
       />
 
-      {/* Edit Shortcut Modal */}
       <EditShortcutModal
         data={editingShortcut}
         isDark={isDark}
@@ -482,7 +450,6 @@ export default function Newtab() {
         onDelete={deleteShortcut}
       />
 
-      {/* Edit Folder Modal */}
       <EditFolderModal
         data={editingFolder}
         isDark={isDark}
