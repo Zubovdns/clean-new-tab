@@ -1,31 +1,17 @@
-export interface ChromeBookmark {
-  id: string;
-  title: string;
-  url: string;
-  favicon?: string;
-}
-
-export interface ChromeFolder {
-  id: string;
-  type: 'folder';
-  title: string;
-  items: ChromeBookmark[];
-}
-
 export interface ChromeShortcutItem {
   id: string;
-  type: 'shortcut';
+  type?: 'shortcut';
   title: string;
   url: string;
   favicon?: string;
 }
 
-export type ChromeGridItem = ChromeShortcutItem | ChromeFolder;
+export type ChromeGridItem = ChromeShortcutItem;
 
 export interface ChromeSection {
   id: string;
   title: string;
-  items: ChromeGridItem[];
+  items: ChromeShortcutItem[];
 }
 
 export interface EditingShortcutData {
@@ -33,18 +19,5 @@ export interface EditingShortcutData {
   title: string;
   url: string;
   sectionId: string;
-  folderId?: string;
   favicon?: string;
 }
-
-export interface EditingFolderData {
-  id: string;
-  title: string;
-  sectionId: string;
-}
-
-export interface ActiveFolderInfo {
-  sectionId: string;
-  folderId: string;
-}
-

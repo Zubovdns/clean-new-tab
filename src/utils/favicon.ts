@@ -13,14 +13,6 @@ export function getDomain(rawUrl: string): string {
   }
 }
 
-export function getRootDomain(domain: string): string {
-  const parts = domain.split('.');
-  if (parts.length > 2) {
-    return parts.slice(-2).join('.');
-  }
-  return domain;
-}
-
 export function getFaviconCandidates(
   rawUrl: string,
   size = 32,

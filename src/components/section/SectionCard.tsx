@@ -1,8 +1,7 @@
 import React from 'react';
 import {
-  ChromeGridItem,
+  ChromeShortcutItem,
   ChromeSection,
-  EditingFolderData,
   EditingShortcutData,
 } from '@app-types';
 import GridItemCard from '@components/grid/GridItemCard';
@@ -19,7 +18,6 @@ export interface SectionCardProps {
   showSectionDropIndicatorAfter: boolean;
   draggedItemCoords: { sectionId: string; itemIndex: number } | null;
   dragOverItemInfo: { sectionId: string; itemIndex: number; position: 'before' | 'after' } | null;
-  dragOverFolderTargetId: string | null;
   dragOverSectionEndId: string | null;
   onSectionDragStart: (e: React.DragEvent, index: number) => void;
   onSectionDragEnd: () => void;
@@ -27,24 +25,24 @@ export interface SectionCardProps {
   onSectionDrop: (e: React.DragEvent, sectionIndex: number, isBottom: boolean) => void;
   onSectionBodyDragOver: (e: React.DragEvent, sectionId: string) => void;
   onSectionBodyDrop: (e: React.DragEvent, sectionId: string) => void;
-  onItemClick: (item: ChromeGridItem, sectionId: string) => void;
+  onItemClick: (item: ChromeShortcutItem, sectionId: string) => void;
   onItemDragStart: (e: React.DragEvent, sectionId: string, itemIndex: number) => void;
   onItemDragEnd: () => void;
   onItemDragOver: (
     e: React.DragEvent,
     sectionId: string,
     itemIndex: number,
-    item: ChromeGridItem,
-    position: 'before' | 'after' | 'inside'
+    item: ChromeShortcutItem,
+    position: 'before' | 'after'
   ) => void;
   onItemDrop: (
     e: React.DragEvent,
     sectionId: string,
     itemIndex: number,
-    item: ChromeGridItem,
-    position: 'before' | 'after' | 'inside'
+    item: ChromeShortcutItem,
+    position: 'before' | 'after'
   ) => void;
-  onOpenAddModal: (sectionId: string, folderId: string | null) => void;
+  onOpenAddModal: (sectionId: string) => void;
   onStartEditingSection: (sec: ChromeSection) => void;
   onSaveEditingSection: () => void;
   onDeleteSection: (sectionId: string) => void;
@@ -54,8 +52,6 @@ export interface SectionCardProps {
   setEditingSectionId: (id: string | null) => void;
   onEditShortcut: (data: EditingShortcutData) => void;
   onDeleteShortcut: (id: string, sectionId: string) => void;
-  onEditFolder: (data: EditingFolderData) => void;
-  onDeleteFolder: (id: string, sectionId: string) => void;
   getCachedFavicon: (url: string, favicon?: string) => string;
   activeMenuId: string | null;
   setActiveMenuId: (id: string | null) => void;
@@ -71,7 +67,6 @@ export function SectionCard({
   showSectionDropIndicatorAfter,
   draggedItemCoords,
   dragOverItemInfo,
-  dragOverFolderTargetId,
   dragOverSectionEndId,
   onSectionDragStart,
   onSectionDragEnd,
@@ -94,8 +89,6 @@ export function SectionCard({
   setEditingSectionId,
   onEditShortcut,
   onDeleteShortcut,
-  onEditFolder,
-  onDeleteFolder,
   getCachedFavicon,
   activeMenuId,
   setActiveMenuId,
@@ -148,150 +141,127 @@ export function SectionCard({
       {/* Section Header */}
       <div className="flex items-center justify-between mb-3.5 px-1 select-none">
         <div className="flex items-center gap-2">
-          {/* Reorder Grip Handle */}
+          {/* Section Drag Handle */}
           <div
             draggable
             onDragStart={(e) => onSectionDragStart(e, sectionIndex)}
             onDragEnd={onSectionDragEnd}
-            className={`cursor-grab active:cursor-grabbing p-1 rounded-md transition-colors ${
-              isDark
-                ? 'text-[#9aa0a6] hover:text-[#e8eaed] hover:bg-[#3c4043]'
-                : 'text-[#5f6368] hover:text-[#202124] hover:bg-[#e8eaed]'
-            }`}
             title="Перетащить секцию"
+            className="cursor-grab active:cursor-grabbing text-[#9aa0a6] hover:text-[#e8eaed] transition-colors p-0.5 rounded"
           >
-            <Icon name="drag_indicator" size={20} className="leading-none block" />
+            <Icon name="drag_indicator" size={18} />
           </div>
 
-          {/* Section Title (Inline Editable) */}
+          {/* Section Title or Inline Edit Input */}
           {isEditingTitle ? (
-            <input
-              type="text"
-              value={editingSectionTitle}
-              onChange={(e) => setEditingSectionTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') onSaveEditingSection();
-                if (e.key === 'Escape') setEditingSectionId(null);
-              }}
-              onBlur={onSaveEditingSection}
-              autoFocus
-              onClick={(e) => e.stopPropagation()}
-              className={`text-[15px] font-medium px-2 py-0.5 rounded outline-none border transition-colors ${
-                isDark
-                  ? 'bg-[#303134] border-[#8ab4f8] text-[#e8eaed]'
-                  : 'bg-white border-[#1a73e8] text-[#202124]'
-              }`}
-            />
-          ) : (
             <div
-              className="flex items-center gap-2 cursor-pointer group/title"
-              onClick={(e) => {
-                e.stopPropagation();
-                onStartEditingSection(section);
-              }}
-              title="Кликните, чтобы переименовать"
+              className="flex items-center gap-2"
+              onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-[15px] font-medium tracking-tight">
-                {section.title}
-              </h3>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full font-normal ${
+              <input
+                type="text"
+                value={editingSectionTitle}
+                onChange={(e) => setEditingSectionTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onSaveEditingSection();
+                  if (e.key === 'Escape') setEditingSectionId(null);
+                }}
+                autoFocus
+                className={`text-sm font-semibold px-2 py-0.5 rounded outline-none border transition-colors ${
                   isDark
-                    ? 'bg-[#303134] text-[#9aa0a6]'
-                    : 'bg-[#e8eaed] text-[#5f6368]'
-                }`}
-              >
-                {section.items.length}
-              </span>
-              <Icon
-                name="edit"
-                size={15}
-                className={`opacity-0 group-hover/title:opacity-100 transition-opacity ${
-                  isDark ? 'text-[#9aa0a6]' : 'text-[#5f6368]'
+                    ? 'bg-[#303134] border-[#8ab4f8] text-[#e8eaed]'
+                    : 'bg-white border-[#1a73e8] text-[#202124]'
                 }`}
               />
+              <button
+                type="button"
+                onClick={onSaveEditingSection}
+                className="text-xs px-2.5 py-1 rounded-full bg-[#1a73e8] hover:bg-[#1557b0] text-white font-medium cursor-pointer"
+              >
+                Сохранить
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h3
+                onDoubleClick={() => onStartEditingSection(section)}
+                className={`text-sm font-semibold tracking-wide cursor-pointer ${
+                  isDark ? 'text-[#e8eaed]' : 'text-[#3c4043]'
+                }`}
+                title="Дважды кликните, чтобы изменить название"
+              >
+                {section.title}
+              </h3>
+              <span className="text-[11px] text-[#9aa0a6]">
+                {section.items.length}
+              </span>
             </div>
           )}
         </div>
 
-        {/* Section Controls */}
-        <div className="flex items-center gap-1">
-          {/* Quick Add Button in Header */}
+        {/* Section Options Button */}
+        <div
+          className="relative"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenAddModal(section.id, null);
-            }}
-            title="Добавить ярлык или папку в эту секцию"
-            className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
-              isDark
-                ? 'hover:bg-[#3c4043] text-[#9aa0a6] hover:text-[#e8eaed]'
-                : 'hover:bg-[#e8eaed] text-[#5f6368] hover:text-[#202124]'
+            onClick={() => setActiveMenuId(isSecMenuOpen ? null : `sec-menu-${section.id}`)}
+            title="Опции секции"
+            aria-label="Опции секции"
+            className={`w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+              isDark ? 'hover:bg-[#3c4043] text-[#9aa0a6]' : 'hover:bg-[#e8eaed] text-[#5f6368]'
             }`}
           >
-            <Icon name="add" size={18} />
+            <Icon name="more_vert" size={16} />
           </button>
 
-          {/* Section 3-dots Menu */}
-          <div className="relative" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => setActiveMenuId(isSecMenuOpen ? null : `sec-menu-${section.id}`)}
-              title="Опции секции"
-              className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
+          {/* Section Dropdown Menu */}
+          {isSecMenuOpen && (
+            <div
+              className={`absolute right-0 top-8 w-48 py-1.5 rounded-lg shadow-xl border z-30 ${
                 isDark
-                  ? 'hover:bg-[#3c4043] text-[#9aa0a6]'
-                  : 'hover:bg-[#e8eaed] text-[#5f6368]'
+                  ? 'bg-[#28292c] border-[#3c4043] text-[#e8eaed]'
+                  : 'bg-white border-[#dadce0] text-[#202124]'
               }`}
+              onClick={(e) => e.stopPropagation()}
             >
-              <Icon name="more_vert" size={16} />
-            </button>
-
-            {isSecMenuOpen && (
-              <div
-                className={`absolute right-0 top-8 w-48 py-1.5 rounded-lg shadow-xl border z-30 ${
-                  isDark
-                    ? 'bg-[#28292c] border-[#3c4043] text-[#e8eaed]'
-                    : 'bg-white border-[#dadce0] text-[#202124]'
+              <button
+                type="button"
+                onClick={() => onStartEditingSection(section)}
+                className={`w-full flex items-center gap-3 px-4 py-2 text-xs text-left cursor-pointer ${
+                  isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
                 }`}
               >
-                <button
-                  type="button"
-                  onClick={() => onStartEditingSection(section)}
-                  className={`w-full flex items-center gap-3 px-4 py-2 text-xs text-left cursor-pointer ${
-                    isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
-                  }`}
-                >
-                  <Icon name="edit" size={16} />
-                  <span>Переименовать секцию</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveMenuId(null);
-                    onOpenAddModal(section.id, null);
-                  }}
-                  className={`w-full flex items-center gap-3 px-4 py-2 text-xs text-left cursor-pointer ${
-                    isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
-                  }`}
-                >
-                  <Icon name="add" size={16} />
-                  <span>Добавить элемент</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onDeleteSection(section.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-2 text-xs text-left text-red-400 cursor-pointer ${
-                    isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
-                  }`}
-                >
-                  <Icon name="delete" size={16} />
-                  <span>Удалить секцию</span>
-                </button>
-              </div>
-            )}
-          </div>
+                <Icon name="edit" size={16} />
+                <span>Переименовать секцию</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveMenuId(null);
+                  onOpenAddModal(section.id);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-2 text-xs text-left cursor-pointer ${
+                  isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
+                }`}
+              >
+                <Icon name="add" size={16} />
+                <span>Добавить ярлык</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onDeleteSection(section.id)}
+                className={`w-full flex items-center gap-3 px-4 py-2 text-xs text-left text-red-400 cursor-pointer ${
+                  isDark ? 'hover:bg-[#35363a]' : 'hover:bg-[#f1f3f4]'
+                }`}
+              >
+                <Icon name="delete" size={16} />
+                <span>Удалить секцию</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -310,7 +280,6 @@ export function SectionCard({
             dragOverItemInfo?.itemIndex === itIdx &&
             !isDragging;
           const dropIndicatorPosition = isTarget ? dragOverItemInfo.position : null;
-          const isFolderHoverTarget = dragOverFolderTargetId === item.id;
 
           return (
             <GridItemCard
@@ -321,7 +290,6 @@ export function SectionCard({
               isDark={isDark}
               isDragging={isDragging}
               dropIndicatorPosition={dropIndicatorPosition}
-              isFolderHoverTarget={isFolderHoverTarget}
               onItemClick={onItemClick}
               onDragStart={onItemDragStart}
               onDragEnd={onItemDragEnd}
@@ -329,8 +297,6 @@ export function SectionCard({
               onDrop={onItemDrop}
               onEditShortcut={onEditShortcut}
               onDeleteShortcut={onDeleteShortcut}
-              onEditFolder={onEditFolder}
-              onDeleteFolder={onDeleteFolder}
               getCachedFavicon={getCachedFavicon}
               activeMenuId={activeMenuId}
               setActiveMenuId={setActiveMenuId}
@@ -359,7 +325,7 @@ export function SectionCard({
         {/* "+ Добавить" Tile inside this Section */}
         <button
           type="button"
-          onClick={() => onOpenAddModal(section.id, null)}
+          onClick={() => onOpenAddModal(section.id)}
           onDragOver={(e) => {
             if (draggedItemCoords) {
               e.preventDefault();
@@ -404,5 +370,4 @@ export function SectionCard({
   );
 }
 
-export const SectionCardMemo = React.memo(SectionCard);
-export default SectionCardMemo;
+export default React.memo(SectionCard);

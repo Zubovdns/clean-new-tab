@@ -7,7 +7,7 @@ export interface EditShortcutModalProps {
   sections: ChromeSection[];
   onClose: () => void;
   onSave: (data: EditingShortcutData) => void;
-  onDelete: (id: string, sectionId: string, folderId?: string) => void;
+  onDelete: (id: string, sectionId: string) => void;
 }
 
 export function EditShortcutModal({
@@ -34,7 +34,7 @@ export function EditShortcutModal({
   };
 
   const handleDelete = () => {
-    onDelete(formData.id, formData.sectionId, formData.folderId);
+    onDelete(formData.id, formData.sectionId);
     onClose();
   };
 
@@ -105,8 +105,8 @@ export function EditShortcutModal({
             />
           </div>
 
-          {/* Move to another Section (if not in a folder) */}
-          {!formData.folderId && sections.length > 1 && (
+          {/* Move to another Section */}
+          {sections.length > 1 && (
             <div>
               <label className="block text-xs font-normal text-[#9aa0a6] mb-1">
                 Секция
@@ -166,6 +166,4 @@ export function EditShortcutModal({
   );
 }
 
-export const EditShortcutModalMemo = React.memo(EditShortcutModal);
-export default EditShortcutModalMemo;
-
+export default React.memo(EditShortcutModal);

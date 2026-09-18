@@ -6,10 +6,8 @@ export interface AddItemModalProps {
   isDark: boolean;
   sections: ChromeSection[];
   targetSectionId: string;
-  targetFolderId: string | null;
   onClose: () => void;
-  onSaveShortcut: (sectionId: string, folderId: string | null, data: { title: string; url: string; favicon?: string }) => void;
-  onSaveFolder: (sectionId: string, title: string) => void;
+  onSaveShortcut: (sectionId: string, data: { title: string; url: string; favicon?: string }) => void;
 }
 
 export function AddItemModal({
@@ -17,12 +15,9 @@ export function AddItemModal({
   isDark,
   sections,
   targetSectionId: initialSectionId,
-  targetFolderId,
   onClose,
   onSaveShortcut,
-  onSaveFolder,
 }: AddItemModalProps) {
-  const [modalType, setModalType] = useState<'shortcut' | 'folder'>('shortcut');
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [favicon, setFavicon] = useState('');
@@ -30,7 +25,6 @@ export function AddItemModal({
 
   useEffect(() => {
     if (isOpen) {
-      setModalType('shortcut');
       setTitle('');
       setUrl('');
       setFavicon('');
@@ -43,17 +37,9 @@ export function AddItemModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const secId = selectedSectionId || sections[0]?.id;
-    if (!secId) return;
+    if (!secId || !url.trim()) return;
 
-    if (modalType === 'folder' && !targetFolderId) {
-      if (!title.trim()) return;
-      onSaveFolder(secId, title.trim());
-      onClose();
-      return;
-    }
-
-    if (!url.trim()) return;
-    onSaveShortcut(secId, targetFolderId, {
+    onSaveShortcut(secId, {
       title: title.trim(),
       url: url.trim(),
       favicon: favicon.trim() || undefined,
@@ -74,49 +60,13 @@ export function AddItemModal({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Tab switch: Shortcut vs Folder (only when adding to section root) */}
-        {!targetFolderId && (
-          <div className="flex rounded-full p-1 mb-5 bg-black/15 select-none">
-            <button
-              type="button"
-              onClick={() => setModalType('shortcut')}
-              className={`flex-1 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-all ${
-                modalType === 'shortcut'
-                  ? isDark
-                    ? 'bg-[#3c4043] text-white shadow-xs'
-                    : 'bg-white text-black shadow-xs'
-                  : 'text-[#9aa0a6]'
-              }`}
-            >
-              Ярлык
-            </button>
-            <button
-              type="button"
-              onClick={() => setModalType('folder')}
-              className={`flex-1 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-all ${
-                modalType === 'folder'
-                  ? isDark
-                    ? 'bg-[#3c4043] text-white shadow-xs'
-                    : 'bg-white text-black shadow-xs'
-                  : 'text-[#9aa0a6]'
-              }`}
-            >
-              Папка
-            </button>
-          </div>
-        )}
-
         <h2 className="text-[16px] font-medium mb-4 select-none">
-          {targetFolderId
-            ? 'Добавить в папку'
-            : modalType === 'folder'
-            ? 'Новая папка'
-            : 'Добавить ярлык'}
+          Добавить ярлык
         </h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {/* Select section if not adding to a folder */}
-          {!targetFolderId && sections.length > 1 && (
+          {/* Select section if multiple sections exist */}
+          {sections.length > 1 && (
             <div>
               <label className="block text-xs font-normal text-[#9aa0a6] mb-1">
                 Секция
@@ -147,9 +97,7 @@ export function AddItemModal({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={modalType === 'folder' ? 'Работа' : 'GitHub'}
-              autoFocus
-              required={modalType === 'folder'}
+              placeholder="Например, GitHub"
               className={`w-full px-3 py-2 text-sm rounded-lg outline-none border transition-colors ${
                 isDark
                   ? 'bg-[#303134] border-[#3c4043] focus:border-[#8ab4f8] text-[#e8eaed]'
@@ -158,44 +106,41 @@ export function AddItemModal({
             />
           </div>
 
-          {modalType === 'shortcut' && (
-            <>
-              <div>
-                <label className="block text-xs font-normal text-[#9aa0a6] mb-1">
-                  URL
-                </label>
-                <input
-                  type="text"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://github.com"
-                  required
-                  className={`w-full px-3 py-2 text-sm rounded-lg outline-none border transition-colors ${
-                    isDark
-                      ? 'bg-[#303134] border-[#3c4043] focus:border-[#8ab4f8] text-[#e8eaed]'
-                      : 'bg-white border-[#dadce0] focus:border-[#1a73e8] text-[#202124]'
-                  }`}
-                />
-              </div>
+          <div>
+            <label className="block text-xs font-normal text-[#9aa0a6] mb-1">
+              URL
+            </label>
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://github.com"
+              autoFocus
+              required
+              className={`w-full px-3 py-2 text-sm rounded-lg outline-none border transition-colors ${
+                isDark
+                  ? 'bg-[#303134] border-[#3c4043] focus:border-[#8ab4f8] text-[#e8eaed]'
+                  : 'bg-white border-[#dadce0] focus:border-[#1a73e8] text-[#202124]'
+              }`}
+            />
+          </div>
 
-              <div>
-                <label className="block text-xs font-normal text-[#9aa0a6] mb-1">
-                  Иконка (необязательно, URL или data:)
-                </label>
-                <input
-                  type="text"
-                  value={favicon}
-                  onChange={(e) => setFavicon(e.target.value)}
-                  placeholder="https://.../icon.png"
-                  className={`w-full px-3 py-2 text-sm rounded-lg outline-none border transition-colors ${
-                    isDark
-                      ? 'bg-[#303134] border-[#3c4043] focus:border-[#8ab4f8] text-[#e8eaed]'
-                      : 'bg-white border-[#dadce0] focus:border-[#1a73e8] text-[#202124]'
-                  }`}
-                />
-              </div>
-            </>
-          )}
+          <div>
+            <label className="block text-xs font-normal text-[#9aa0a6] mb-1">
+              Иконка (необязательно, URL или data:)
+            </label>
+            <input
+              type="text"
+              value={favicon}
+              onChange={(e) => setFavicon(e.target.value)}
+              placeholder="https://.../icon.png"
+              className={`w-full px-3 py-2 text-sm rounded-lg outline-none border transition-colors ${
+                isDark
+                  ? 'bg-[#303134] border-[#3c4043] focus:border-[#8ab4f8] text-[#e8eaed]'
+                  : 'bg-white border-[#dadce0] focus:border-[#1a73e8] text-[#202124]'
+              }`}
+            />
+          </div>
 
           <div className="flex items-center justify-end gap-2 mt-4 select-none">
             <button
@@ -224,6 +169,4 @@ export function AddItemModal({
   );
 }
 
-export const AddItemModalMemo = React.memo(AddItemModal);
-export default AddItemModalMemo;
-
+export default React.memo(AddItemModal);

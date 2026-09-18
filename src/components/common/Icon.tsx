@@ -8,7 +8,6 @@ export type IconName =
   | 'edit'
   | 'more_vert'
   | 'drag_indicator'
-  | 'folder'
   | 'drive_file_move';
 
 interface IconProps {
@@ -143,19 +142,6 @@ export function Icon({ name, className = '', size = 20 }: IconProps) {
         </svg>
       );
 
-    case 'folder':
-      return (
-        <svg
-          width={size}
-          height={size}
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className={className}
-        >
-          <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
-        </svg>
-      );
-
     case 'drive_file_move':
       return (
         <svg
@@ -180,5 +166,4 @@ export function Icon({ name, className = '', size = 20 }: IconProps) {
   }
 }
 
-export const IconMemo = React.memo(Icon);
-export default IconMemo;
+export default React.memo(Icon);

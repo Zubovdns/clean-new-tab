@@ -7,7 +7,7 @@ import { saveMultipleFaviconsToCache, getFaviconCache } from '../../utils/storag
  * 
  * Stores clean, lightweight URL strings (avoiding Base64 image bloat in memory)
  */
-export async function resolveFaviconForUrl(pageUrl: string): Promise<string | null> {
+async function resolveFaviconForUrl(pageUrl: string): Promise<string | null> {
   try {
     const urlObj = new URL(pageUrl.startsWith('http') ? pageUrl : `https://${pageUrl}`);
     const domain = urlObj.hostname;
@@ -54,7 +54,7 @@ export async function resolveFaviconForUrl(pageUrl: string): Promise<string | nu
  * Scans all currently open tabs and caches their lightweight favicon URLs
  */
 async function scanOpenTabs() {
-  if (typeof chrome !== 'undefined' || !chrome.tabs?.query) return;
+  if (typeof chrome === 'undefined' || !chrome.tabs?.query) return;
   try {
     const tabs = await chrome.tabs.query({});
     const entries: Record<string, string> = {};
@@ -147,13 +147,6 @@ if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
     if (message?.type === 'RESOLVE_FAVICON' && message.url) {
       resolveFaviconForUrl(message.url).then((favicon) => {
         sendResponse({ favicon });
-      });
-      return true;
-    }
-
-    if (message?.type === 'GET_FAVICON_CACHE') {
-      getFaviconCache().then((cache) => {
-        sendResponse({ cache });
       });
       return true;
     }

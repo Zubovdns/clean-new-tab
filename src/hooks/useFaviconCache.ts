@@ -55,7 +55,7 @@ export function useFaviconCache() {
     [faviconCache]
   );
 
-  return { faviconCache, getCachedFavicon };
+  return { getCachedFavicon };
 }
 
 export default useFaviconCache;

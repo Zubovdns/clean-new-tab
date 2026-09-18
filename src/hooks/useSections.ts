@@ -1,11 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  ChromeBookmark,
-  ChromeFolder,
   ChromeSection,
   ChromeShortcutItem,
   EditingShortcutData,
-  EditingFolderData,
 } from '@app-types';
 import {
   CHROME_NTP_SECTIONS_KEY,
@@ -36,12 +33,8 @@ export function useSections() {
     const urls: string[] = [];
     for (const sec of sections) {
       for (const item of sec.items) {
-        if (item.type === 'shortcut' && item.url && !item.favicon) {
+        if (item.url && !item.favicon) {
           urls.push(item.url);
-        } else if (item.type === 'folder' && Array.isArray(item.items)) {
-          for (const b of item.items) {
-            if (b.url && !b.favicon) urls.push(b.url);
-          }
         }
       }
     }
@@ -92,24 +85,8 @@ export function useSections() {
     saveSections(updated);
   }, [sections, saveSections]);
 
-  const addFolder = useCallback((sectionId: string, title: string) => {
-    const trimmed = title.trim();
-    if (!trimmed) return;
-    const newFolder: ChromeFolder = {
-      id: `f-${Date.now()}`,
-      type: 'folder',
-      title: trimmed,
-      items: [],
-    };
-    const updated = sections.map((s) =>
-      s.id === sectionId ? { ...s, items: [...s.items, newFolder] } : s
-    );
-    saveSections(updated);
-  }, [sections, saveSections]);
-
   const addShortcut = useCallback((
     sectionId: string,
-    folderId: string | null,
     data: { title: string; url: string; favicon?: string }
   ) => {
     let url = data.url.trim();
@@ -120,41 +97,18 @@ export function useSections() {
     const finalTitle = data.title.trim() || getDomain(url);
     const customIcon = data.favicon?.trim() || undefined;
 
-    const newBookmark: ChromeBookmark = {
-      id: `bm-${Date.now()}`,
+    const newShortcut: ChromeShortcutItem = {
+      id: `sc-${Date.now()}`,
+      type: 'shortcut',
       title: finalTitle,
       url,
       favicon: customIcon,
     };
 
-    if (folderId) {
-      // Add inside folder
-      const updated = sections.map((s) => {
-        if (s.id === sectionId) {
-          return {
-            ...s,
-            items: s.items.map((it) => {
-              if (it.id === folderId && it.type === 'folder') {
-                return { ...it, items: [...it.items, newBookmark] };
-              }
-              return it;
-            }),
-          };
-        }
-        return s;
-      });
-      saveSections(updated);
-    } else {
-      // Add to section root
-      const newShortcut: ChromeShortcutItem = {
-        ...newBookmark,
-        type: 'shortcut',
-      };
-      const updated = sections.map((s) =>
-        s.id === sectionId ? { ...s, items: [...s.items, newShortcut] } : s
-      );
-      saveSections(updated);
-    }
+    const updated = sections.map((s) =>
+      s.id === sectionId ? { ...s, items: [...s.items, newShortcut] } : s
+    );
+    saveSections(updated);
 
     // Proactively request background service worker to resolve favicon
     if (!customIcon && typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
@@ -174,34 +128,14 @@ export function useSections() {
     }
     const title = data.title.trim() || getDomain(url);
     const customIcon = data.favicon?.trim() || undefined;
-    const { id, sectionId: targetSecId, folderId } = data;
+    const { id, sectionId: targetSecId } = data;
 
-    // Inside folder
-    if (folderId) {
-      const updated = sections.map((s) => ({
-        ...s,
-        items: s.items.map((it) => {
-          if (it.id === folderId && it.type === 'folder') {
-            return {
-              ...it,
-              items: it.items.map((b) =>
-                b.id === id ? { ...b, title, url, favicon: customIcon } : b
-              ),
-            };
-          }
-          return it;
-        }),
-      }));
-      saveSections(updated);
-      return;
-    }
-
-    // Move to different section or update in place
+    // Remove from source section and place into target section
     let foundShortcut: ChromeShortcutItem | null = null;
     const cleanSections = sections.map((s) => ({
       ...s,
       items: s.items.filter((it) => {
-        if (it.id === id && it.type === 'shortcut') {
+        if (it.id === id) {
           foundShortcut = { ...it, title, url, favicon: customIcon };
           return false;
         }
@@ -229,99 +163,10 @@ export function useSections() {
     }
   }, [sections, saveSections]);
 
-  const deleteShortcut = useCallback((id: string, sectionId: string, folderId?: string) => {
-    if (folderId) {
-      const updated = sections.map((s) => {
-        if (s.id === sectionId) {
-          return {
-            ...s,
-            items: s.items.map((it) => {
-              if (it.id === folderId && it.type === 'folder') {
-                return { ...it, items: it.items.filter((b) => b.id !== id) };
-              }
-              return it;
-            }),
-          };
-        }
-        return s;
-      });
-      saveSections(updated);
-    } else {
-      const updated = sections.map((s) =>
-        s.id === sectionId ? { ...s, items: s.items.filter((it) => it.id !== id) } : s
-      );
-      saveSections(updated);
-    }
-  }, [sections, saveSections]);
-
-  const saveEditFolder = useCallback((data: EditingFolderData) => {
-    const title = data.title.trim();
-    if (!title) return;
-    const { id, sectionId: targetSecId } = data;
-
-    let foundFolder: ChromeFolder | null = null;
-    const cleanSections = sections.map((s) => ({
-      ...s,
-      items: s.items.filter((it) => {
-        if (it.id === id && it.type === 'folder') {
-          foundFolder = { ...it, title };
-          return false;
-        }
-        return true;
-      }),
-    }));
-
-    if (foundFolder) {
-      const updated = cleanSections.map((s) => {
-        if (s.id === targetSecId) {
-          return { ...s, items: [...s.items, foundFolder!] };
-        }
-        return s;
-      });
-      saveSections(updated);
-    }
-  }, [sections, saveSections]);
-
-  const deleteFolder = useCallback((folderId: string, sectionId: string) => {
+  const deleteShortcut = useCallback((id: string, sectionId: string) => {
     const updated = sections.map((s) =>
-      s.id === sectionId ? { ...s, items: s.items.filter((it) => it.id !== folderId) } : s
+      s.id === sectionId ? { ...s, items: s.items.filter((it) => it.id !== id) } : s
     );
-    saveSections(updated);
-  }, [sections, saveSections]);
-
-  const moveItemToFolder = useCallback((
-    sourceSectionId: string,
-    sourceItemIndex: number,
-    targetSectionId: string,
-    targetFolderId: string
-  ) => {
-    const sourceSec = sections.find((s) => s.id === sourceSectionId);
-    const sourceItem = sourceSec?.items[sourceItemIndex];
-    if (!sourceItem || sourceItem.type !== 'shortcut') return;
-
-    const newBookmark: ChromeBookmark = {
-      id: sourceItem.id,
-      title: sourceItem.title,
-      url: sourceItem.url,
-      favicon: sourceItem.favicon,
-    };
-
-    const updated = sections.map((sec) => {
-      let secItems = sec.items;
-      if (sec.id === sourceSectionId) {
-        secItems = secItems.filter((_, idx) => idx !== sourceItemIndex);
-      }
-      if (sec.id === targetSectionId) {
-        secItems = secItems.map((it) => {
-          if (it.id === targetFolderId && it.type === 'folder') {
-            return { ...it, items: [...it.items, newBookmark] };
-          }
-          return it;
-        });
-      }
-      return { ...sec, items: secItems };
-    });
-
     saveSections(updated);
   }, [sections, saveSections]);
 
@@ -400,52 +245,19 @@ export function useSections() {
     saveSections(updated);
   }, [sections, saveSections]);
 
-  const reorderFolderItems = useCallback((
-    sectionId: string,
-    folderId: string,
-    sourceIndex: number,
-    targetIndex: number
-  ) => {
-    if (sourceIndex === targetIndex) return;
-    const updated = sections.map((s) => {
-      if (s.id === sectionId) {
-        return {
-          ...s,
-          items: s.items.map((it) => {
-            if (it.id === folderId && it.type === 'folder') {
-              const newFolderItems = [...it.items];
-              const [moved] = newFolderItems.splice(sourceIndex, 1);
-              newFolderItems.splice(targetIndex, 0, moved);
-              return { ...it, items: newFolderItems };
-            }
-            return it;
-          }),
-        };
-      }
-      return s;
-    });
-    saveSections(updated);
-  }, [sections, saveSections]);
-
   return {
     sections,
     isLoaded,
-    saveSections,
     createSection,
     updateSectionTitle,
     deleteSection,
     reorderSections,
-    addFolder,
     addShortcut,
     saveEditShortcut,
     deleteShortcut,
-    saveEditFolder,
-    deleteFolder,
-    moveItemToFolder,
     reorderItemsInSameSection,
     moveItemAcrossSections,
     moveItemToEndOfSection,
-    reorderFolderItems,
   };
 }
 

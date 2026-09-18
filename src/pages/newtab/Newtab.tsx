@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  ActiveFolderInfo,
-  ChromeFolder,
-  ChromeGridItem,
+  ChromeShortcutItem,
   ChromeSection,
-  EditingFolderData,
   EditingShortcutData,
 } from '@app-types';
 import useTheme from '@hooks/useTheme';
@@ -14,8 +11,6 @@ import SectionCard from '@components/section/SectionCard';
 import AddSectionModal from '@components/modals/AddSectionModal';
 import AddItemModal from '@components/modals/AddItemModal';
 import EditShortcutModal from '@components/modals/EditShortcutModal';
-import EditFolderModal from '@components/modals/EditFolderModal';
-import FolderModal from '@components/modals/FolderModal';
 import Icon from '@components/common/Icon';
 
 export default function Newtab() {
@@ -28,29 +23,21 @@ export default function Newtab() {
     updateSectionTitle,
     deleteSection,
     reorderSections,
-    addFolder,
     addShortcut,
     saveEditShortcut,
     deleteShortcut,
-    saveEditFolder,
-    deleteFolder,
-    moveItemToFolder,
     reorderItemsInSameSection,
     moveItemAcrossSections,
     moveItemToEndOfSection,
-    reorderFolderItems,
   } = useSections();
 
-  const [activeFolderInfo, setActiveFolderInfo] = useState<ActiveFolderInfo | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [targetSectionId, setTargetSectionId] = useState<string>('');
-  const [targetFolderId, setTargetFolderId] = useState<string | null>(null);
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
 
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionTitle, setEditingSectionTitle] = useState('');
   const [editingShortcut, setEditingShortcut] = useState<EditingShortcutData | null>(null);
-  const [editingFolder, setEditingFolder] = useState<EditingFolderData | null>(null);
 
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
@@ -72,7 +59,6 @@ export default function Newtab() {
     itemIndex: number;
     position: 'before' | 'after';
   } | null>(null);
-  const [dragOverFolderTargetId, setDragOverFolderTargetId] = useState<string | null>(null);
   const [dragOverSectionEndId, setDragOverSectionEndId] = useState<string | null>(null);
 
   const isDraggingRef = useRef(false);
@@ -81,11 +67,9 @@ export default function Newtab() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setActiveFolderInfo(null);
         setIsAddModalOpen(false);
         setIsAddSectionModalOpen(false);
         setEditingShortcut(null);
-        setEditingFolder(null);
         setActiveMenuId(null);
         setEditingSectionId(null);
       }
@@ -93,11 +77,6 @@ export default function Newtab() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  const activeSection = sections.find((s) => s.id === activeFolderInfo?.sectionId) || null;
-  const activeFolder = (activeSection?.items.find(
-    (item): item is ChromeFolder => item.id === activeFolderInfo?.folderId && item.type === 'folder'
-  ) as ChromeFolder | undefined) || null;
 
   const handleStartEditingSection = useCallback((sec: ChromeSection) => {
     setEditingSectionId(sec.id);
@@ -121,15 +100,11 @@ export default function Newtab() {
     }
 
     deleteSection(sectionId);
-    if (activeFolderInfo?.sectionId === sectionId) {
-      setActiveFolderInfo(null);
-    }
     setActiveMenuId(null);
-  }, [sections, deleteSection, activeFolderInfo]);
+  }, [sections, deleteSection]);
 
-  const handleOpenAddModal = useCallback((sectionId: string, folderId: string | null = null) => {
+  const handleOpenAddModal = useCallback((sectionId: string) => {
     setTargetSectionId(sectionId);
-    setTargetFolderId(folderId);
     setIsAddModalOpen(true);
   }, []);
 
@@ -197,8 +172,8 @@ export default function Newtab() {
     e: React.DragEvent,
     sectionId: string,
     itemIndex: number,
-    targetItem: ChromeGridItem,
-    position: 'before' | 'after' | 'inside'
+    _targetItem: ChromeShortcutItem,
+    position: 'before' | 'after'
   ) => {
     if (draggedSectionIndexRef.current !== null) return;
     const source = draggedItemCoordsRef.current;
@@ -208,42 +183,22 @@ export default function Newtab() {
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
 
-    const sourceSec = sections.find((s) => s.id === source.sectionId);
-    const sourceItem = sourceSec?.items[source.itemIndex];
-    const canNestInFolder =
-      sourceItem?.type === 'shortcut' &&
-      targetItem.type === 'folder' &&
-      !(source.sectionId === sectionId && source.itemIndex === itemIndex);
-
-    if (position === 'inside' && canNestInFolder) {
-      if (dragOverFolderTargetId !== targetItem.id) {
-        setDragOverFolderTargetId(targetItem.id);
-        setDragOverItemInfo(null);
-        setDragOverSectionEndId(null);
-      }
-      return;
-    }
-
-    const effectivePosition: 'before' | 'after' = position === 'inside' ? 'after' : position;
-
-    setDragOverFolderTargetId(null);
     setDragOverSectionEndId(null);
 
     if (
       !dragOverItemInfo ||
       dragOverItemInfo.sectionId !== sectionId ||
       dragOverItemInfo.itemIndex !== itemIndex ||
-      dragOverItemInfo.position !== effectivePosition
+      dragOverItemInfo.position !== position
     ) {
-      setDragOverItemInfo({ sectionId, itemIndex, position: effectivePosition });
+      setDragOverItemInfo({ sectionId, itemIndex, position });
     }
-  }, [sections, dragOverFolderTargetId, dragOverItemInfo]);
+  }, [dragOverItemInfo]);
 
   const handleItemDragEnd = useCallback(() => {
     draggedItemCoordsRef.current = null;
     setDraggedItemCoords(null);
     setDragOverItemInfo(null);
-    setDragOverFolderTargetId(null);
     setDragOverSectionEndId(null);
     setTimeout(() => {
       isDraggingRef.current = false;
@@ -254,8 +209,8 @@ export default function Newtab() {
     e: React.DragEvent,
     targetSectionId: string,
     targetItemIndex: number,
-    targetItem: ChromeGridItem,
-    position: 'before' | 'after' | 'inside'
+    _targetItem: ChromeShortcutItem,
+    position: 'before' | 'after'
   ) => {
     if (draggedSectionIndexRef.current !== null) return;
     const source = draggedItemCoordsRef.current;
@@ -267,30 +222,9 @@ export default function Newtab() {
     e.preventDefault();
     e.stopPropagation();
 
-    const sourceSec = sections.find((s) => s.id === source.sectionId);
-    const sourceItem = sourceSec?.items[source.itemIndex];
-    if (!sourceItem) {
-      handleItemDragEnd();
-      return;
-    }
-
-    // Nest shortcut into folder when dropped directly inside a folder
-    if (
-      position === 'inside' &&
-      sourceItem.type === 'shortcut' &&
-      targetItem.type === 'folder' &&
-      !(source.sectionId === targetSectionId && source.itemIndex === targetItemIndex)
-    ) {
-      moveItemToFolder(source.sectionId, source.itemIndex, targetSectionId, targetItem.id);
-      handleItemDragEnd();
-      return;
-    }
-
-    const effectivePosition: 'before' | 'after' = position === 'inside' ? 'after' : position;
-
     // Reorder within same section
     if (source.sectionId === targetSectionId) {
-      const insertIndex = effectivePosition === 'before' ? targetItemIndex : targetItemIndex + 1;
+      const insertIndex = position === 'before' ? targetItemIndex : targetItemIndex + 1;
       const finalIndex = insertIndex > source.itemIndex ? insertIndex - 1 : insertIndex;
       if (source.itemIndex !== finalIndex) {
         reorderItemsInSameSection(targetSectionId, source.itemIndex, finalIndex);
@@ -300,22 +234,22 @@ export default function Newtab() {
     }
 
     // Transfer item across sections
-    const targetIndex = effectivePosition === 'before' ? targetItemIndex : targetItemIndex + 1;
+    const targetIndex = position === 'before' ? targetItemIndex : targetItemIndex + 1;
     moveItemAcrossSections(source.sectionId, source.itemIndex, targetSectionId, targetIndex);
     handleItemDragEnd();
-  }, [sections, moveItemToFolder, reorderItemsInSameSection, moveItemAcrossSections, handleItemDragEnd]);
+  }, [reorderItemsInSameSection, moveItemAcrossSections, handleItemDragEnd]);
 
   const handleSectionBodyDragOver = useCallback((e: React.DragEvent, sectionId: string) => {
     if (draggedSectionIndexRef.current !== null) return;
     if (draggedItemCoordsRef.current === null) return;
-    if (dragOverFolderTargetId || dragOverItemInfo) return;
+    if (dragOverItemInfo) return;
 
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     if (dragOverSectionEndId !== sectionId) {
       setDragOverSectionEndId(sectionId);
     }
-  }, [dragOverFolderTargetId, dragOverItemInfo, dragOverSectionEndId]);
+  }, [dragOverItemInfo, dragOverSectionEndId]);
 
   const handleSectionBodyDrop = useCallback((e: React.DragEvent, targetSectionId: string) => {
     if (draggedSectionIndexRef.current !== null) return;
@@ -347,18 +281,9 @@ export default function Newtab() {
     handleItemDragEnd();
   }, [sections, reorderItemsInSameSection, moveItemToEndOfSection, handleItemDragEnd]);
 
-  const handleItemClick = useCallback((item: ChromeGridItem, sectionId: string) => {
+  const handleItemClick = useCallback((item: ChromeShortcutItem) => {
     if (isDraggingRef.current) return;
-    if (item.type === 'folder') {
-      setActiveFolderInfo({ sectionId, folderId: item.id });
-    } else {
-      window.location.href = item.url;
-    }
-  }, []);
-
-  const handleBookmarkClick = useCallback((url: string) => {
-    if (isDraggingRef.current) return;
-    window.location.href = url;
+    window.location.href = item.url;
   }, []);
 
   if (!isLoaded) {
@@ -408,7 +333,6 @@ export default function Newtab() {
               showSectionDropIndicatorAfter={showSectionDropIndicatorAfter}
               draggedItemCoords={draggedItemCoords}
               dragOverItemInfo={dragOverItemInfo}
-              dragOverFolderTargetId={dragOverFolderTargetId}
               dragOverSectionEndId={dragOverSectionEndId}
               onSectionDragStart={handleSectionDragStart}
               onSectionDragEnd={handleSectionDragEnd}
@@ -431,8 +355,6 @@ export default function Newtab() {
               setEditingSectionId={setEditingSectionId}
               onEditShortcut={setEditingShortcut}
               onDeleteShortcut={deleteShortcut}
-              onEditFolder={setEditingFolder}
-              onDeleteFolder={deleteFolder}
               getCachedFavicon={getCachedFavicon}
               activeMenuId={activeMenuId}
               setActiveMenuId={setActiveMenuId}
@@ -457,22 +379,6 @@ export default function Newtab() {
         </div>
       </div>
 
-      <FolderModal
-        isOpen={Boolean(activeFolder && activeSection)}
-        isDark={isDark}
-        activeSection={activeSection}
-        activeFolder={activeFolder}
-        onClose={() => setActiveFolderInfo(null)}
-        onBookmarkClick={handleBookmarkClick}
-        onOpenAddModal={(secId, fId) => handleOpenAddModal(secId, fId)}
-        onOpenEditModal={setEditingShortcut}
-        onDeleteBookmark={(id, secId, fId) => deleteShortcut(id, secId, fId)}
-        onReorderBookmarks={reorderFolderItems}
-        getCachedFavicon={getCachedFavicon}
-        activeMenuId={activeMenuId}
-        setActiveMenuId={setActiveMenuId}
-      />
-
       <AddSectionModal
         isOpen={isAddSectionModalOpen}
         isDark={isDark}
@@ -485,10 +391,8 @@ export default function Newtab() {
         isDark={isDark}
         sections={sections}
         targetSectionId={targetSectionId}
-        targetFolderId={targetFolderId}
         onClose={() => setIsAddModalOpen(false)}
         onSaveShortcut={addShortcut}
-        onSaveFolder={addFolder}
       />
 
       <EditShortcutModal
@@ -498,15 +402,6 @@ export default function Newtab() {
         onClose={() => setEditingShortcut(null)}
         onSave={saveEditShortcut}
         onDelete={deleteShortcut}
-      />
-
-      <EditFolderModal
-        data={editingFolder}
-        isDark={isDark}
-        sections={sections}
-        onClose={() => setEditingFolder(null)}
-        onSave={saveEditFolder}
-        onDelete={deleteFolder}
       />
     </div>
   );

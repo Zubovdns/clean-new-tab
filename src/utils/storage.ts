@@ -1,7 +1,7 @@
 import { ChromeGridItem, ChromeSection } from '../types';
 
 export const CHROME_NTP_SECTIONS_KEY = 'chrome_ntp_sections_v3';
-export const CHROME_NTP_ITEMS_KEY = 'chrome_ntp_grid_items_v2';
+const CHROME_NTP_ITEMS_KEY = 'chrome_ntp_grid_items_v2';
 export const CHROME_NTP_FAVICON_CACHE_KEY = 'chrome_ntp_favicon_cache_v1';
 
 export const DEFAULT_SECTIONS: ChromeSection[] = [
@@ -39,18 +39,10 @@ export const DEFAULT_SECTIONS: ChromeSection[] = [
     id: 'sec-work',
     title: 'Рабочее пространство',
     items: [
-      {
-        id: 'f-dev',
-        type: 'folder',
-        title: 'Разработка',
-        items: [
-          { id: 'dev-gh', title: 'GitHub', url: 'https://github.com' },
-          { id: 'dev-so', title: 'StackOverflow', url: 'https://stackoverflow.com' },
-          { id: 'dev-ai', title: 'Claude AI', url: 'https://claude.ai' },
-          { id: 'dev-mdn', title: 'MDN Web Docs', url: 'https://developer.mozilla.org' },
-          { id: 'dev-vercel', title: 'Vercel', url: 'https://vercel.com' },
-        ],
-      },
+      { id: 'sc-gh', type: 'shortcut', title: 'GitHub', url: 'https://github.com' },
+      { id: 'sc-so', type: 'shortcut', title: 'StackOverflow', url: 'https://stackoverflow.com' },
+      { id: 'sc-ai', type: 'shortcut', title: 'Claude AI', url: 'https://claude.ai' },
+      { id: 'sc-mdn', type: 'shortcut', title: 'MDN Web Docs', url: 'https://developer.mozilla.org' },
       {
         id: 'sc-figma',
         type: 'shortcut',
@@ -69,17 +61,10 @@ export const DEFAULT_SECTIONS: ChromeSection[] = [
     id: 'sec-media',
     title: 'Медиа и отдых',
     items: [
-      {
-        id: 'f-media',
-        type: 'folder',
-        title: 'Медиа',
-        items: [
-          { id: 'med-yt', title: 'YouTube', url: 'https://www.youtube.com' },
-          { id: 'med-tg', title: 'Telegram', url: 'https://web.telegram.org' },
-          { id: 'med-reddit', title: 'Reddit', url: 'https://www.reddit.com' },
-          { id: 'med-spotify', title: 'Spotify', url: 'https://open.spotify.com' },
-        ],
-      },
+      { id: 'sc-yt', type: 'shortcut', title: 'YouTube', url: 'https://www.youtube.com' },
+      { id: 'sc-tg', type: 'shortcut', title: 'Telegram', url: 'https://web.telegram.org' },
+      { id: 'sc-reddit', type: 'shortcut', title: 'Reddit', url: 'https://www.reddit.com' },
+      { id: 'sc-spotify', type: 'shortcut', title: 'Spotify', url: 'https://open.spotify.com' },
     ],
   },
 ];
@@ -87,7 +72,7 @@ export const DEFAULT_SECTIONS: ChromeSection[] = [
 /**
  * Safe chrome.storage.local helper with localStorage fallback
  */
-export async function getStorageItem<T>(key: string, defaultValue: T): Promise<T> {
+async function getStorageItem<T>(key: string, defaultValue: T): Promise<T> {
   try {
     if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
       const result = await chrome.storage.local.get([key]);
@@ -117,23 +102,78 @@ export async function setStorageItem<T>(key: string, value: T): Promise<void> {
   }
 }
 
+interface RawStoredItem {
+  id?: string;
+  type?: string;
+  title?: string;
+  url?: string;
+  favicon?: string;
+  items?: RawStoredItem[];
+}
+
+interface RawStoredSection {
+  id: string;
+  title: string;
+  items?: RawStoredItem[];
+}
+
+function normalizeSectionItems(items: RawStoredItem[]): ChromeGridItem[] {
+  const result: ChromeGridItem[] = [];
+  for (const item of items) {
+    if (item.type === 'folder' && Array.isArray(item.items)) {
+      for (const b of item.items) {
+        result.push({
+          id: b.id || `sc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          type: 'shortcut',
+          title: b.title || '',
+          url: b.url || '',
+          favicon: b.favicon,
+        });
+      }
+    } else {
+      result.push({
+        id: item.id || `sc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        type: 'shortcut',
+        title: item.title || '',
+        url: item.url || '',
+        favicon: item.favicon,
+      });
+    }
+  }
+  return result;
+}
+
 /**
  * Loads sections from storage with migration fallback from single grid items
  */
 export async function loadSectionsFromStorage(): Promise<ChromeSection[]> {
-  const savedSections = await getStorageItem<ChromeSection[] | null>(CHROME_NTP_SECTIONS_KEY, null);
+  const savedSections = await getStorageItem<RawStoredSection[] | null>(CHROME_NTP_SECTIONS_KEY, null);
   if (savedSections && Array.isArray(savedSections) && savedSections.length > 0) {
-    return savedSections;
+    let hadFolders = false;
+    const normalized = savedSections.map((sec) => {
+      if (sec.items && sec.items.some((it) => it.type === 'folder')) {
+        hadFolders = true;
+      }
+      return {
+        id: sec.id,
+        title: sec.title,
+        items: normalizeSectionItems(sec.items || []),
+      };
+    });
+    if (hadFolders) {
+      await setStorageItem(CHROME_NTP_SECTIONS_KEY, normalized);
+    }
+    return normalized;
   }
 
   // Fallback: check if previous v2 grid items exist and migrate them to a section
-  const previousItems = await getStorageItem<ChromeGridItem[] | null>(CHROME_NTP_ITEMS_KEY, null);
+  const previousItems = await getStorageItem<RawStoredItem[] | null>(CHROME_NTP_ITEMS_KEY, null);
   if (previousItems && Array.isArray(previousItems) && previousItems.length > 0) {
     const migrated: ChromeSection[] = [
       {
         id: 'sec-migrated',
         title: 'Мои закладки',
-        items: previousItems,
+        items: normalizeSectionItems(previousItems),
       },
     ];
     await setStorageItem(CHROME_NTP_SECTIONS_KEY, migrated);
@@ -148,14 +188,6 @@ export async function loadSectionsFromStorage(): Promise<ChromeSection[]> {
  */
 export async function getFaviconCache(): Promise<Record<string, string>> {
   return getStorageItem<Record<string, string>>(CHROME_NTP_FAVICON_CACHE_KEY, {});
-}
-
-export async function saveFaviconToCache(key: string, faviconUrl: string): Promise<void> {
-  if (!key || !faviconUrl) return;
-  const cache = await getFaviconCache();
-  if (cache[key] === faviconUrl) return;
-  cache[key] = faviconUrl;
-  await setStorageItem(CHROME_NTP_FAVICON_CACHE_KEY, cache);
 }
 
 const MAX_FAVICON_CACHE_ENTRIES = 200;

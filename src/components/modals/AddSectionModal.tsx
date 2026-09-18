@@ -92,6 +92,5 @@ export function AddSectionModal({
   );
 }
 
-export const AddSectionModalMemo = React.memo(AddSectionModal);
-export default AddSectionModalMemo;
+export default React.memo(AddSectionModal);
 

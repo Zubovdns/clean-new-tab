@@ -84,6 +84,5 @@ export function FaviconImage({
   );
 }
 
-export const FaviconImageMemo = React.memo(FaviconImage);
-export default FaviconImageMemo;
+export default React.memo(FaviconImage);
 

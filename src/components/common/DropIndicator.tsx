@@ -30,5 +30,4 @@ export function DropIndicator({ type, position, className = '' }: DropIndicatorP
   );
 }
 
-export const DropIndicatorMemo = React.memo(DropIndicator);
-export default DropIndicatorMemo;
+export default React.memo(DropIndicator);
