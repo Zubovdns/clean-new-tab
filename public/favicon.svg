@@ -1,64 +1,47 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
   <defs>
-    <!-- Background Gradient -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1e1e24" />
-      <stop offset="100%" stop-color="#0e0f14" />
+    <!-- Background Gradient: Deep slate obsidian -->
+    <linearGradient id="bgSlate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22242b" />
+      <stop offset="100%" stop-color="#101114" />
     </linearGradient>
 
-    <!-- Border Highlight -->
-    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="rgba(255,255,255,0.3)" />
-      <stop offset="100%" stop-color="rgba(255,255,255,0.05)" />
+    <!-- Outer Border Gradient -->
+    <linearGradient id="outerBorder" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.22)" />
+      <stop offset="100%" stop-color="rgba(255, 255, 255, 0.04)" />
     </linearGradient>
 
-    <!-- Brave Coral / Indigo Accents -->
-    <linearGradient id="tileGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ff6b35" />
-      <stop offset="100%" stop-color="#f72585" />
+    <!-- Electric Sapphire Tile Gradient -->
+    <linearGradient id="tileBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#1d4ed8" />
     </linearGradient>
 
-    <linearGradient id="tileGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#7209b7" />
-      <stop offset="100%" stop-color="#4361ee" />
+    <!-- Tile Inner Highlight -->
+    <linearGradient id="tileHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.25)" />
+      <stop offset="100%" stop-color="rgba(255, 255, 255, 0)" />
     </linearGradient>
-
-    <linearGradient id="tileGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4cc9f0" />
-      <stop offset="100%" stop-color="#4361ee" />
-    </linearGradient>
-
-    <linearGradient id="tileGrad4" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffb703" />
-      <stop offset="100%" stop-color="#fb8500" />
-    </linearGradient>
-
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.5"/>
-    </filter>
   </defs>
 
-  <!-- Squircle Base -->
-  <rect x="6" y="6" width="116" height="116" rx="28" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="2" filter="url(#glow)"/>
+  <!-- Base Squircle -->
+  <rect x="6" y="6" width="116" height="116" rx="28" fill="url(#bgSlate)" stroke="url(#outerBorder)" stroke-width="1.5" />
 
-  <!-- 4 Speed Dial / Tab Tiles -->
-  <g transform="translate(24, 24)">
-    <!-- Top Left (Brave Orange/Magenta) -->
-    <rect x="0" y="0" width="36" height="36" rx="9" fill="url(#tileGrad1)" />
-    
-    <!-- Top Right (Violet/Blue) -->
-    <rect x="44" y="0" width="36" height="36" rx="9" fill="url(#tileGrad2)" />
+  <!-- 4 Speed Dial Tiles: 42x42 each, 6px gap -->
+  <!-- Top Left -->
+  <rect x="19" y="19" width="42" height="42" rx="12" fill="url(#tileBlue)" stroke="url(#tileHighlight)" stroke-width="1" />
 
-    <!-- Bottom Left (Cyan/Blue) -->
-    <rect x="0" y="44" width="36" height="36" rx="9" fill="url(#tileGrad3)" />
+  <!-- Top Right -->
+  <rect x="67" y="19" width="42" height="42" rx="12" fill="url(#tileBlue)" stroke="url(#tileHighlight)" stroke-width="1" />
 
-    <!-- Bottom Right (Golden/Orange) -->
-    <rect x="44" y="44" width="36" height="36" rx="9" fill="url(#tileGrad4)" />
+  <!-- Bottom Left -->
+  <rect x="19" y="67" width="42" height="42" rx="12" fill="url(#tileBlue)" stroke="url(#tileHighlight)" stroke-width="1" />
 
-    <!-- Subtle inner accents: mini icons/dots -->
-    <circle cx="18" cy="18" r="4" fill="rgba(255,255,255,0.9)" />
-    <circle cx="62" cy="18" r="4" fill="rgba(255,255,255,0.9)" />
-    <circle cx="18" cy="62" r="4" fill="rgba(255,255,255,0.9)" />
-    <circle cx="62" cy="62" r="4" fill="rgba(255,255,255,0.9)" />
-  </g>
+  <!-- Bottom Right: Action Tile with White Plus -->
+  <rect x="67" y="67" width="42" height="42" rx="12" fill="url(#tileBlue)" stroke="url(#tileHighlight)" stroke-width="1" />
+
+  <!-- Centered Bold White Plus -->
+  <line x1="88" y1="75" x2="88" y2="101" stroke="#ffffff" stroke-width="7.5" stroke-linecap="round" />
+  <line x1="75" y1="88" x2="101" y2="88" stroke="#ffffff" stroke-width="7.5" stroke-linecap="round" />
 </svg>
