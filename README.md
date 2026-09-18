@@ -1,6 +1,6 @@
-# Brave New Tab Extension 🦁🚀
+# Clean New Tab Extension 🚀
 
-Расширение для браузера **Brave** (и других Chromium-браузеров), замещающее стандартную страницу «Новая вкладка» на персональный дашборд.
+Расширение для Chromium-браузеров (Brave, Chrome и др.), замещающее стандартную страницу «Новая вкладка» на персональный дашборд.
 
 Построено на базе современного стека: **Vite**, **React 19**, **TypeScript**, **Tailwind CSS 4** и **@crxjs/vite-plugin** (Manifest V3).
 
@@ -43,7 +43,7 @@ npm run dev
 4. В появившейся панели нажмите кнопку **«Загрузить распакованное»** (*Load unpacked*).
 5. В диалоговом окне выберите папку:
    ```text
-   /Users/zubovdns/Developer/browser-new-tab/dist_chrome
+   /Users/zubovdns/Developer/clean-new-tab/dist_chrome
    ```
 6. Нажмите **Выбрать** (*Select*).
 7. Откройте новую вкладку нажатием `Cmd + T` (или `Ctrl + T`).
@@ -73,7 +73,7 @@ npm run build
 ## 📁 Структура проекта
 
 ```text
-browser-new-tab/
+clean-new-tab/
 ├── PROJECT_CONTEXT.md        # Детальный контекст, цели и роадмап проекта
 ├── manifest.json             # Конфигурация Manifest V3 для Chrome / Brave
 ├── vite.config.base.ts       # Базовый конфиг Vite

@@ -42,7 +42,7 @@ Brave основан на движке Chromium, поэтому поддержи
 
 ### Структура проекта:
 ```text
-browser-new-tab/
+clean-new-tab/
 ├── manifest.json              # Базовый манифест расширения Manifest V3
 ├── manifest.dev.json          # Переопределения манифеста для режима разработки
 ├── vite.config.base.ts        # Базовый конфиг Vite (React, Tailwind, path aliases)

@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Brave New Tab",
+  "name": "Clean New Tab",
   "description": "Персональная новая вкладка для Brave и Chromium браузеров.",
   "chrome_url_overrides": {
     "newtab": "src/pages/newtab/index.html"
