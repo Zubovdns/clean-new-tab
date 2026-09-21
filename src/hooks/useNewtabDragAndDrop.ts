@@ -58,11 +58,9 @@ export const useNewtabDragAndDrop = ({
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       const targetGap = isBottom ? sectionIndex + 1 : sectionIndex;
-      if (dragOverSectionGap !== targetGap) {
-        setDragOverSectionGap(targetGap);
-      }
+      setDragOverSectionGap((prev) => (prev !== targetGap ? targetGap : prev));
     },
-    [dragOverSectionGap]
+    []
   );
 
   const handleSectionDragEnd = useCallback(() => {
@@ -120,16 +118,19 @@ export const useNewtabDragAndDrop = ({
 
       setDragOverSectionEndId(null);
 
-      if (
-        !dragOverItemInfo ||
-        dragOverItemInfo.sectionId !== sectionId ||
-        dragOverItemInfo.itemIndex !== itemIndex ||
-        dragOverItemInfo.position !== position
-      ) {
-        setDragOverItemInfo({ sectionId, itemIndex, position });
-      }
+      setDragOverItemInfo((prev) => {
+        if (
+          prev &&
+          prev.sectionId === sectionId &&
+          prev.itemIndex === itemIndex &&
+          prev.position === position
+        ) {
+          return prev;
+        }
+        return { sectionId, itemIndex, position };
+      });
     },
-    [dragOverItemInfo]
+    []
   );
 
   const handleItemDragEnd = useCallback(() => {
@@ -183,15 +184,12 @@ export const useNewtabDragAndDrop = ({
     (e: React.DragEvent, sectionId: string) => {
       if (draggedSectionIndexRef.current !== null) return;
       if (draggedItemCoordsRef.current === null) return;
-      if (dragOverItemInfo) return;
 
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      if (dragOverSectionEndId !== sectionId) {
-        setDragOverSectionEndId(sectionId);
-      }
+      setDragOverSectionEndId((prev) => (prev !== sectionId ? sectionId : prev));
     },
-    [dragOverItemInfo, dragOverSectionEndId]
+    []
   );
 
   const handleSectionBodyDrop = useCallback(

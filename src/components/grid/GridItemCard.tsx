@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { ChromeShortcutItem, EditingShortcutData } from '@app-types';
+import { useNewtabContext } from '@/context/NewtabContext';
+import { ChromeShortcutItem } from '@app-types';
 import { DropIndicator } from '@components/common/DropIndicator';
 import { FaviconImage } from '@components/common/FaviconImage';
 import { Icon } from '@components/common/Icon';
@@ -9,35 +10,8 @@ export interface GridItemCardProps {
 	item: ChromeShortcutItem;
 	itemIndex: number;
 	sectionId: string;
-	isDark: boolean;
 	isDragging: boolean;
 	dropIndicatorPosition: 'before' | 'after' | null;
-	onItemClick: (item: ChromeShortcutItem, sectionId: string) => void;
-	onDragStart: (
-		e: React.DragEvent,
-		sectionId: string,
-		itemIndex: number,
-	) => void;
-	onDragEnd: () => void;
-	onDragOver: (
-		e: React.DragEvent,
-		sectionId: string,
-		itemIndex: number,
-		item: ChromeShortcutItem,
-		position: 'before' | 'after',
-	) => void;
-	onDrop: (
-		e: React.DragEvent,
-		sectionId: string,
-		itemIndex: number,
-		item: ChromeShortcutItem,
-		position: 'before' | 'after',
-	) => void;
-	onEditShortcut: (data: EditingShortcutData) => void;
-	onDeleteShortcut: (id: string, sectionId: string) => void;
-	getCachedFavicon: (url: string, favicon?: string) => string;
-	activeMenuId: string | null;
-	setActiveMenuId: (id: string | null) => void;
 }
 
 export const GridItemCard = React.memo(
@@ -45,20 +19,23 @@ export const GridItemCard = React.memo(
 		item,
 		itemIndex,
 		sectionId,
-		isDark,
 		isDragging,
 		dropIndicatorPosition,
-		onItemClick,
-		onDragStart,
-		onDragEnd,
-		onDragOver,
-		onDrop,
-		onEditShortcut,
-		onDeleteShortcut,
-		getCachedFavicon,
-		activeMenuId,
-		setActiveMenuId,
 	}: GridItemCardProps) => {
+		const {
+			isDark,
+			onItemClick,
+			onItemDragStart: onDragStart,
+			onItemDragEnd: onDragEnd,
+			onItemDragOver: onDragOver,
+			onItemDrop: onDrop,
+			onEditShortcut,
+			onDeleteShortcut,
+			getCachedFavicon,
+			activeMenuId,
+			setActiveMenuId,
+		} = useNewtabContext();
+
 		const handleDragOver = (e: React.DragEvent) => {
 			e.preventDefault();
 			e.stopPropagation();

@@ -1,4 +1,5 @@
 import { ChromeGridItem, ChromeSection } from '@app-types';
+import { generateId, normalizeSafeUrl } from '@utils/security';
 
 export const CHROME_NTP_SECTIONS_KEY = 'chrome_ntp_sections_v3';
 const CHROME_NTP_ITEMS_KEY = 'chrome_ntp_grid_items_v2';
@@ -122,20 +123,24 @@ const normalizeSectionItems = (items: RawStoredItem[]): ChromeGridItem[] => {
   for (const item of items) {
     if (item.type === 'folder' && Array.isArray(item.items)) {
       for (const b of item.items) {
+        const safeUrl = normalizeSafeUrl(b.url || '');
+        if (!safeUrl) continue;
         result.push({
-          id: b.id || `sc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          id: b.id || generateId('sc'),
           type: 'shortcut',
-          title: b.title || '',
-          url: b.url || '',
+          title: b.title || safeUrl.replace(/^https?:\/\//i, ''),
+          url: safeUrl,
           favicon: b.favicon,
         });
       }
     } else {
+      const safeUrl = normalizeSafeUrl(item.url || '');
+      if (!safeUrl) continue;
       result.push({
-        id: item.id || `sc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        id: item.id || generateId('sc'),
         type: 'shortcut',
-        title: item.title || '',
-        url: item.url || '',
+        title: item.title || safeUrl.replace(/^https?:\/\//i, ''),
+        url: safeUrl,
         favicon: item.favicon,
       });
     }
@@ -155,8 +160,8 @@ export const loadSectionsFromStorage = async (): Promise<ChromeSection[]> => {
         hadFolders = true;
       }
       return {
-        id: sec.id,
-        title: sec.title,
+        id: sec.id || generateId('sec'),
+        title: sec.title || 'Новая секция',
         items: normalizeSectionItems(sec.items || []),
       };
     });

@@ -6,11 +6,11 @@
   },
   "permissions": [
     "storage",
-    "favicon",
-    "tabs"
+    "favicon"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "https://api.github.com/*",
+    "https://github.com/*"
   ],
   "web_accessible_resources": [
     {

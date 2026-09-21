@@ -44,18 +44,7 @@ export const getFaviconCandidates = (
   // 0. Explicit user-defined custom favicon (highest priority)
   addCandidate(customFavicon);
 
-  // 1. Google FaviconV2 CDN (fast Anycast CDN, 32px optimized PNG, global edge caching)
-  // Skipped for private/local domains where Google cannot resolve
-  if (!isLocalOrPrivate) {
-    addCandidate(
-      `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(targetUrl)}&size=${size}`
-    );
-  }
-
-  // 2. Tab-discovered URL or runtime cache (fallback if Google fails, or first choice for intranet/local)
-  addCandidate(cachedFavicon);
-
-  // 3. Chromium native _favicon endpoint
+  // 1. Chromium native _favicon endpoint (fast local browser cache, zero network latency, no tracking)
   const isChromium =
     typeof chrome !== 'undefined' &&
     !!chrome.runtime?.getURL &&
@@ -70,6 +59,17 @@ export const getFaviconCandidates = (
     } catch {
       // ignore invalid URL construction
     }
+  }
+
+  // 2. Tab-discovered URL or runtime cache
+  addCandidate(cachedFavicon);
+
+  // 3. Google FaviconV2 CDN (fast Anycast CDN, 32px optimized PNG, global edge caching)
+  // Skipped for private/local domains where Google cannot resolve
+  if (!isLocalOrPrivate) {
+    addCandidate(
+      `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(targetUrl)}&size=${size}`
+    );
   }
 
   // 4. Direct favicon at origin root (preserves subdomain icons)

@@ -25,9 +25,12 @@ export const useSync = (
 
   const debounceTimerRef = useRef<number | null>(null);
   const sectionsRef = useRef<ChromeSection[]>(sections);
-  sectionsRef.current = sections;
 
-  const localLastUpdatedAtRef = useRef<number>(Date.now());
+  useEffect(() => {
+    sectionsRef.current = sections;
+  }, [sections]);
+
+  const localLastUpdatedAtRef = useRef<number>(0);
 
   // Load saved sync settings on mount
   useEffect(() => {

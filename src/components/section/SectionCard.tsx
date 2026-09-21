@@ -1,10 +1,7 @@
 import React from 'react';
 
-import {
-  ChromeShortcutItem,
-  ChromeSection,
-  EditingShortcutData,
-} from '@app-types';
+import { useNewtabContext } from '@/context/NewtabContext';
+import { ChromeSection } from '@app-types';
 import { DropIndicator } from '@components/common/DropIndicator';
 import { Icon } from '@components/common/Icon';
 import { GridItemCard } from '@components/grid/GridItemCard';
@@ -12,92 +9,62 @@ import { GridItemCard } from '@components/grid/GridItemCard';
 export interface SectionCardProps {
   section: ChromeSection;
   sectionIndex: number;
-  isDark: boolean;
-  isDraggingThisSection: boolean;
-  draggedSectionIndex: number | null;
-  showSectionDropIndicatorBefore: boolean;
-  showSectionDropIndicatorAfter: boolean;
-  draggedItemCoords: { sectionId: string; itemIndex: number } | null;
-  dragOverItemInfo: { sectionId: string; itemIndex: number; position: 'before' | 'after' } | null;
-  dragOverSectionEndId: string | null;
-  onSectionDragStart: (e: React.DragEvent, index: number) => void;
-  onSectionDragEnd: () => void;
-  onSectionDragOver: (e: React.DragEvent, sectionIndex: number, isBottom: boolean) => void;
-  onSectionDrop: (e: React.DragEvent, sectionIndex: number, isBottom: boolean) => void;
-  onSectionBodyDragOver: (e: React.DragEvent, sectionId: string) => void;
-  onSectionBodyDrop: (e: React.DragEvent, sectionId: string) => void;
-  onItemClick: (item: ChromeShortcutItem, sectionId: string) => void;
-  onItemDragStart: (e: React.DragEvent, sectionId: string, itemIndex: number) => void;
-  onItemDragEnd: () => void;
-  onItemDragOver: (
-    e: React.DragEvent,
-    sectionId: string,
-    itemIndex: number,
-    item: ChromeShortcutItem,
-    position: 'before' | 'after'
-  ) => void;
-  onItemDrop: (
-    e: React.DragEvent,
-    sectionId: string,
-    itemIndex: number,
-    item: ChromeShortcutItem,
-    position: 'before' | 'after'
-  ) => void;
-  onOpenAddModal: (sectionId: string) => void;
-  onStartEditingSection: (sec: ChromeSection) => void;
-  onSaveEditingSection: () => void;
-  onDeleteSection: (sectionId: string) => void;
-  editingSectionId: string | null;
-  editingSectionTitle: string;
-  setEditingSectionTitle: (title: string) => void;
-  setEditingSectionId: (id: string | null) => void;
-  onEditShortcut: (data: EditingShortcutData) => void;
-  onDeleteShortcut: (id: string, sectionId: string) => void;
-  getCachedFavicon: (url: string, favicon?: string) => string;
-  activeMenuId: string | null;
-  setActiveMenuId: (id: string | null) => void;
+  totalSections: number;
 }
 
 export const SectionCard = React.memo(({
   section,
   sectionIndex,
-  isDark,
-  isDraggingThisSection,
-  draggedSectionIndex,
-  showSectionDropIndicatorBefore,
-  showSectionDropIndicatorAfter,
-  draggedItemCoords,
-  dragOverItemInfo,
-  dragOverSectionEndId,
-  onSectionDragStart,
-  onSectionDragEnd,
-  onSectionDragOver,
-  onSectionDrop,
-  onSectionBodyDragOver,
-  onSectionBodyDrop,
-  onItemClick,
-  onItemDragStart,
-  onItemDragEnd,
-  onItemDragOver,
-  onItemDrop,
-  onOpenAddModal,
-  onStartEditingSection,
-  onSaveEditingSection,
-  onDeleteSection,
-  editingSectionId,
-  editingSectionTitle,
-  setEditingSectionTitle,
-  setEditingSectionId,
-  onEditShortcut,
-  onDeleteShortcut,
-  getCachedFavicon,
-  activeMenuId,
-  setActiveMenuId,
+  totalSections,
 }: SectionCardProps) => {
+  const {
+    isDark,
+    activeMenuId,
+    setActiveMenuId,
+    editingSectionId,
+    editingSectionTitle,
+    setEditingSectionId,
+    setEditingSectionTitle,
+    onStartEditingSection,
+    onSaveEditingSection,
+    onDeleteSection,
+    onOpenAddModal,
+    draggedSectionIndex,
+    dragOverSectionGap,
+    draggedItemCoords,
+    dragOverItemInfo,
+    dragOverSectionEndId,
+    onSectionDragStart,
+    onSectionDragEnd,
+    onSectionDragOver,
+    onSectionDrop,
+    onSectionBodyDragOver,
+    onSectionBodyDrop,
+  } = useNewtabContext();
+
   const isEditingTitle = editingSectionId === section.id;
   const isSecMenuOpen = activeMenuId === `sec-menu-${section.id}`;
   const isDraggingSection = draggedSectionIndex !== null;
+  const isDraggingThisSection = draggedSectionIndex === sectionIndex;
   const isDropTargetAtEnd = dragOverSectionEndId === section.id && draggedItemCoords !== null;
+
+  const isLastSection = sectionIndex === totalSections - 1;
+  const isSelfGap =
+    draggedSectionIndex !== null &&
+    (dragOverSectionGap === draggedSectionIndex || dragOverSectionGap === draggedSectionIndex + 1);
+
+  const showSectionDropIndicatorBefore =
+    draggedSectionIndex !== null &&
+    !isDraggingThisSection &&
+    !isSelfGap &&
+    dragOverSectionGap === sectionIndex;
+
+  const showSectionDropIndicatorAfter =
+    draggedSectionIndex !== null &&
+    !isDraggingThisSection &&
+    !isSelfGap &&
+    isLastSection &&
+    dragOverSectionGap === totalSections;
 
   return (
     <div
@@ -288,19 +255,8 @@ export const SectionCard = React.memo(({
               item={item}
               itemIndex={itIdx}
               sectionId={section.id}
-              isDark={isDark}
               isDragging={isDragging}
               dropIndicatorPosition={dropIndicatorPosition}
-              onItemClick={onItemClick}
-              onDragStart={onItemDragStart}
-              onDragEnd={onItemDragEnd}
-              onDragOver={onItemDragOver}
-              onDrop={onItemDrop}
-              onEditShortcut={onEditShortcut}
-              onDeleteShortcut={onDeleteShortcut}
-              getCachedFavicon={getCachedFavicon}
-              activeMenuId={activeMenuId}
-              setActiveMenuId={setActiveMenuId}
             />
           );
         })}

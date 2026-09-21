@@ -30,10 +30,12 @@ export const useDeviceFlow = ({
   });
 
   const pollingTimerRef = useRef<number | null>(null);
+  const isCancelledRef = useRef<boolean>(false);
 
-  // Cleanup polling timer on unmount
+  // Cleanup polling timer and cancel in-flight flow on unmount
   useEffect(() => {
     return () => {
+      isCancelledRef.current = true;
       if (pollingTimerRef.current) {
         window.clearTimeout(pollingTimerRef.current);
       }
@@ -41,6 +43,7 @@ export const useDeviceFlow = ({
   }, []);
 
   const cancelDeviceFlow = useCallback(() => {
+    isCancelledRef.current = true;
     if (pollingTimerRef.current) {
       window.clearTimeout(pollingTimerRef.current);
       pollingTimerRef.current = null;
@@ -56,6 +59,7 @@ export const useDeviceFlow = ({
   const startDeviceFlow = useCallback(
     async (overrideClientId?: string) => {
       cancelDeviceFlow();
+      isCancelledRef.current = false;
       setDeviceFlow({
         step: 'requesting',
         userCode: null,
@@ -67,6 +71,7 @@ export const useDeviceFlow = ({
 
       try {
         const codeRes = await requestDeviceCode(targetClientId);
+        if (isCancelledRef.current) return;
 
         setDeviceFlow({
           step: 'code_ready',
@@ -81,6 +86,8 @@ export const useDeviceFlow = ({
         let pollIntervalMs = Math.max(codeRes.interval || 5, 5) * 1000;
 
         const poll = async () => {
+          if (isCancelledRef.current) return;
+
           if (Date.now() - startTime > maxDurationMs) {
             setDeviceFlow((prev) => ({
               ...prev,
@@ -92,9 +99,11 @@ export const useDeviceFlow = ({
 
           try {
             const tokenRes = await pollDeviceToken(targetClientId, codeRes.device_code);
+            if (isCancelledRef.current) return;
 
             if (tokenRes.access_token) {
               await onTokenReceived(tokenRes.access_token, targetClientId);
+              if (isCancelledRef.current) return;
               setDeviceFlow({
                 step: 'success',
                 userCode: null,
@@ -120,11 +129,14 @@ export const useDeviceFlow = ({
             console.warn('[useDeviceFlow] Polling error:', err);
           }
 
+          if (isCancelledRef.current) return;
           pollingTimerRef.current = window.setTimeout(poll, pollIntervalMs);
         };
 
+        if (isCancelledRef.current) return;
         pollingTimerRef.current = window.setTimeout(poll, pollIntervalMs);
       } catch (err) {
+        if (isCancelledRef.current) return;
         setDeviceFlow({
           step: 'error',
           userCode: null,
