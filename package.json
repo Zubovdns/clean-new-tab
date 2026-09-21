@@ -12,7 +12,9 @@
     "build:firefox": "vite build --config vite.config.firefox.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix"
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "type": "module",
   "dependencies": {
@@ -41,6 +43,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
-    "vite-tsconfig-paths": "^6.1.1"
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^5.0.1"
   }
 }
