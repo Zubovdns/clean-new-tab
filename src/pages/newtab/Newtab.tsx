@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+
 import {
   ChromeShortcutItem,
   ChromeSection,
   EditingShortcutData,
 } from '@app-types';
-import { useTheme } from '@hooks/useTheme';
-import { useFaviconCache } from '@hooks/useFaviconCache';
-import { useSections } from '@hooks/useSections';
-import { useSync } from '@hooks/useSync';
-import { useNewtabDragAndDrop } from '@hooks/useNewtabDragAndDrop';
-import { SectionCard } from '@components/section/SectionCard';
-import { AddSectionModal } from '@components/modals/AddSectionModal';
+import { Icon } from '@components/common/Icon';
 import { AddItemModal } from '@components/modals/AddItemModal';
+import { AddSectionModal } from '@components/modals/AddSectionModal';
 import { EditShortcutModal } from '@components/modals/EditShortcutModal';
 import { SettingsModal } from '@components/modals/SettingsModal';
-import { Icon } from '@components/common/Icon';
+import { SectionCard } from '@components/section/SectionCard';
+import { useFaviconCache } from '@hooks/useFaviconCache';
+import { useNewtabDragAndDrop } from '@hooks/useNewtabDragAndDrop';
+import { useSections } from '@hooks/useSections';
+import { useSync } from '@hooks/useSync';
+import { useTheme } from '@hooks/useTheme';
 
 export const Newtab = () => {
   const isDark = useTheme();

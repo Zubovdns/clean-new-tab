@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
+
 import { ChromeSection, SyncSettings } from '@app-types';
 import { Icon } from '@components/common/Icon';
-import { DeviceFlowState } from '@hooks/useSync';
+import { BackupSection } from '@components/modals/settings/BackupSection';
+import { SyncAdvancedConfig } from '@components/modals/settings/SyncAdvancedConfig';
 import { SyncConnectedView } from '@components/modals/settings/SyncConnectedView';
 import { SyncDeviceFlowTab } from '@components/modals/settings/SyncDeviceFlowTab';
 import { SyncPatTab } from '@components/modals/settings/SyncPatTab';
-import { SyncAdvancedConfig } from '@components/modals/settings/SyncAdvancedConfig';
-import { BackupSection } from '@components/modals/settings/BackupSection';
+import { DeviceFlowState } from '@hooks/useSync';
 
 export interface SettingsModalProps {
   isOpen: boolean;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+
 import { getFaviconCandidates } from '@utils/favicon';
 
 export interface FaviconImageProps {

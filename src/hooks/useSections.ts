@@ -1,16 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+
 import {
   ChromeSection,
   ChromeShortcutItem,
   EditingShortcutData,
 } from '@app-types';
+import { getDomain } from '@utils/favicon';
 import {
   CHROME_NTP_SECTIONS_KEY,
   DEFAULT_SECTIONS,
   loadSectionsFromStorage,
   setStorageItem,
 } from '@utils/storage';
-import { getDomain } from '@utils/favicon';
 
 export const useSections = (onSectionsChangedLocally?: (updated: ChromeSection[]) => void) => {
   const [sections, setSections] = useState<ChromeSection[]>([]);

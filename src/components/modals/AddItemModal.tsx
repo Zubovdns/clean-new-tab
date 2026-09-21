@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import { ChromeSection } from '@app-types';
 
 export interface AddItemModalProps {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+
 import { ChromeSection } from '@app-types';
 import { Icon } from '@components/common/Icon';
 import { exportSectionsToFile, importSectionsFromFile } from '@utils/backup';

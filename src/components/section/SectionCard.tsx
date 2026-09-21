@@ -1,12 +1,13 @@
 import React from 'react';
+
 import {
   ChromeShortcutItem,
   ChromeSection,
   EditingShortcutData,
 } from '@app-types';
-import { GridItemCard } from '@components/grid/GridItemCard';
-import { Icon } from '@components/common/Icon';
 import { DropIndicator } from '@components/common/DropIndicator';
+import { Icon } from '@components/common/Icon';
+import { GridItemCard } from '@components/grid/GridItemCard';
 
 export interface SectionCardProps {
   section: ChromeSection;

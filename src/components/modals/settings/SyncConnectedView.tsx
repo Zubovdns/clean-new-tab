@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { SyncSettings } from '@app-types';
 import { Icon } from '@components/common/Icon';
 

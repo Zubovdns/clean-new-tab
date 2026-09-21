@@ -1,8 +1,9 @@
 import React from 'react';
+
 import { ChromeShortcutItem, EditingShortcutData } from '@app-types';
+import { DropIndicator } from '@components/common/DropIndicator';
 import { FaviconImage } from '@components/common/FaviconImage';
 import { Icon } from '@components/common/Icon';
-import { DropIndicator } from '@components/common/DropIndicator';
 
 export interface GridItemCardProps {
 	item: ChromeShortcutItem;

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+
 import {
   DEFAULT_GITHUB_CLIENT_ID,
   requestDeviceCode,

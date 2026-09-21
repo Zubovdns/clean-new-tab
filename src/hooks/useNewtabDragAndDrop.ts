@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+
 import { ChromeSection, ChromeShortcutItem } from '@app-types';
 
 interface UseNewtabDragAndDropParams {
