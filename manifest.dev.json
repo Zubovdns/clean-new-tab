@@ -6,8 +6,7 @@
   },
   "permissions": [
     "storage",
-    "favicon",
-    "tabs"
+    "favicon"
   ],
   "host_permissions": [
     "https://api.github.com/*",

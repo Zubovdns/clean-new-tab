@@ -1,4 +1,5 @@
 import { ChromeSection, SyncPayload } from '@app-types';
+import { validateAndNormalizeSections } from '@utils/security';
 
 export const GIST_FILENAME = 'clean-new-tab.json';
 
@@ -32,11 +33,13 @@ export const pullGistData = async (
 		throw new Error('Некорректный формат данных в Gist');
 	}
 
+	const validatedSections = validateAndNormalizeSections(parsed.sections);
+
 	return {
 		version: parsed.version || 1,
 		updatedAt:
 			typeof parsed.updatedAt === 'number' ? parsed.updatedAt : Date.now(),
-		sections: parsed.sections,
+		sections: validatedSections,
 	};
 };
 

@@ -6,6 +6,7 @@ import {
   EditingShortcutData,
 } from '@app-types';
 import { getDomain } from '@utils/favicon';
+import { generateId, normalizeSafeUrl } from '@utils/security';
 import {
   CHROME_NTP_SECTIONS_KEY,
   DEFAULT_SECTIONS,
@@ -72,7 +73,7 @@ export const useSections = (onSectionsChangedLocally?: (updated: ChromeSection[]
     if (!trimmedTitle) return;
 
     const newSec: ChromeSection = {
-      id: `sec-${Date.now()}`,
+      id: generateId('sec'),
       title: trimmedTitle,
       items: [],
     };
@@ -103,16 +104,14 @@ export const useSections = (onSectionsChangedLocally?: (updated: ChromeSection[]
     sectionId: string,
     data: { title: string; url: string; favicon?: string }
   ) => {
-    let url = data.url.trim();
+    const url = normalizeSafeUrl(data.url);
     if (!url) return;
-    if (!/^https?:\/\//i.test(url)) {
-      url = `https://${url}`;
-    }
+
     const finalTitle = data.title.trim() || getDomain(url);
     const customIcon = data.favicon?.trim() || undefined;
 
     const newShortcut: ChromeShortcutItem = {
-      id: `sc-${Date.now()}`,
+      id: generateId('sc'),
       type: 'shortcut',
       title: finalTitle,
       url,
@@ -135,11 +134,9 @@ export const useSections = (onSectionsChangedLocally?: (updated: ChromeSection[]
   }, [sections, saveSections]);
 
   const saveEditShortcut = useCallback((data: EditingShortcutData) => {
-    let url = data.url.trim();
+    const url = normalizeSafeUrl(data.url);
     if (!url) return;
-    if (!/^https?:\/\//i.test(url)) {
-      url = `https://${url}`;
-    }
+
     const title = data.title.trim() || getDomain(url);
     const customIcon = data.favicon?.trim() || undefined;
     const { id, sectionId: targetSecId } = data;

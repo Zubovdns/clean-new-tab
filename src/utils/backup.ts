@@ -1,4 +1,5 @@
 import { ChromeSection } from '@app-types';
+import { validateAndNormalizeSections } from '@utils/security';
 import { CHROME_NTP_SECTIONS_KEY, setStorageItem } from '@utils/storage';
 
 /**
@@ -40,12 +41,16 @@ export const importSectionsFromFile = (): Promise<ChromeSection[]> => {
 			try {
 				const text = await file.text();
 				const json = JSON.parse(text);
-				const importedSections = Array.isArray(json) ? json : json.sections;
-				if (!Array.isArray(importedSections)) {
+				const rawSections = Array.isArray(json) ? json : json.sections;
+				if (!Array.isArray(rawSections)) {
 					throw new Error('Файл не содержит корректных секций Clean New Tab');
 				}
-				await setStorageItem(CHROME_NTP_SECTIONS_KEY, importedSections);
-				resolve(importedSections);
+				const validatedSections = validateAndNormalizeSections(rawSections);
+				if (validatedSections.length === 0) {
+					throw new Error('Файл не содержит допустимых секций или ссылок');
+				}
+				await setStorageItem(CHROME_NTP_SECTIONS_KEY, validatedSections);
+				resolve(validatedSections);
 			} catch (err) {
 				reject(err);
 			}

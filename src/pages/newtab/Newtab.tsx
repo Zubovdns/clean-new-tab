@@ -16,6 +16,7 @@ import { useNewtabDragAndDrop } from '@hooks/useNewtabDragAndDrop';
 import { useSections } from '@hooks/useSections';
 import { useSync } from '@hooks/useSync';
 import { useTheme } from '@hooks/useTheme';
+import { normalizeSafeUrl } from '@utils/security';
 
 export const Newtab = () => {
   const isDark = useTheme();
@@ -154,7 +155,10 @@ export const Newtab = () => {
 
   const handleItemClick = useCallback((item: ChromeShortcutItem) => {
     if (isDraggingRef.current) return;
-    window.location.href = item.url;
+    const safeUrl = normalizeSafeUrl(item.url);
+    if (safeUrl) {
+      window.location.href = safeUrl;
+    }
   }, [isDraggingRef]);
 
   if (!isLoaded) {
