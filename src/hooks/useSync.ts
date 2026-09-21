@@ -5,20 +5,14 @@ import {
   DEFAULT_GITHUB_CLIENT_ID,
   getSyncSettings,
   saveSyncSettings,
-  requestDeviceCode,
-  pollDeviceToken,
   fetchUserProfile,
   findOrCreateGist,
   pullGistData,
   pushGistData,
-} from '../utils/githubSync';
+} from '@utils/sync';
+import useDeviceFlow, { DeviceFlowState } from './useDeviceFlow';
 
-export interface DeviceFlowState {
-  step: 'idle' | 'requesting' | 'code_ready' | 'success' | 'error';
-  userCode: string | null;
-  verificationUri: string;
-  errorMsg: string | null;
-}
+export type { DeviceFlowState };
 
 export function useSync(
   sections: ChromeSection[],
@@ -28,14 +22,6 @@ export function useSync(
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
-  const [deviceFlow, setDeviceFlow] = useState<DeviceFlowState>({
-    step: 'idle',
-    userCode: null,
-    verificationUri: 'https://github.com/login/device',
-    errorMsg: null,
-  });
-
-  const pollingTimerRef = useRef<number | null>(null);
   const debounceTimerRef = useRef<number | null>(null);
   const sectionsRef = useRef<ChromeSection[]>(sections);
   sectionsRef.current = sections;
@@ -44,17 +30,12 @@ export function useSync(
 
   // Load saved sync settings on mount
   useEffect(() => {
-    getSyncSettings().then((settings) => {
-      setSyncSettings(settings);
-    });
+    getSyncSettings().then(setSyncSettings);
   }, []);
 
-  // Cleanup timers on unmount
+  // Cleanup debounce timer on unmount
   useEffect(() => {
     return () => {
-      if (pollingTimerRef.current) {
-        window.clearTimeout(pollingTimerRef.current);
-      }
       if (debounceTimerRef.current) {
         window.clearTimeout(debounceTimerRef.current);
       }
@@ -62,135 +43,43 @@ export function useSync(
   }, []);
 
   /**
-   * Stop any active device flow polling
+   * Handle token received from Device Flow
    */
-  const cancelDeviceFlow = useCallback(() => {
-    if (pollingTimerRef.current) {
-      window.clearTimeout(pollingTimerRef.current);
-      pollingTimerRef.current = null;
-    }
-    setDeviceFlow({
-      step: 'idle',
-      userCode: null,
-      verificationUri: 'https://github.com/login/device',
-      errorMsg: null,
-    });
-  }, []);
-
-  /**
-   * Start GitHub OAuth Device Flow
-   */
-  const startDeviceFlow = useCallback(
-    async (customClientId?: string) => {
-      cancelDeviceFlow();
-      setDeviceFlow({
-        step: 'requesting',
-        userCode: null,
-        verificationUri: 'https://github.com/login/device',
-        errorMsg: null,
-      });
-
-      const clientId = customClientId?.trim() || syncSettings.customClientId || DEFAULT_GITHUB_CLIENT_ID;
-
+  const handleTokenFromDeviceFlow = useCallback(
+    async (token: string, clientId: string) => {
+      setIsSyncing(true);
       try {
-        const codeRes = await requestDeviceCode(clientId);
+        const profile = await fetchUserProfile(token);
+        const gistInfo = await findOrCreateGist(token, sectionsRef.current);
 
-        setDeviceFlow({
-          step: 'code_ready',
-          userCode: codeRes.user_code,
-          verificationUri: codeRes.verification_uri || 'https://github.com/login/device',
-          errorMsg: null,
-        });
-
-        // Start polling loop
-        const startTime = Date.now();
-        const maxDurationMs = (codeRes.expires_in || 900) * 1000;
-        let pollIntervalMs = Math.max(codeRes.interval || 5, 5) * 1000;
-
-        const poll = async () => {
-          if (Date.now() - startTime > maxDurationMs) {
-            setDeviceFlow((prev) => ({
-              ...prev,
-              step: 'error',
-              errorMsg: 'Время действия кода истекло. Пожалуйста, попробуйте снова.',
-            }));
-            return;
-          }
-
-          try {
-            const tokenRes = await pollDeviceToken(clientId, codeRes.device_code);
-
-            if (tokenRes.access_token) {
-              // Successfully authorized!
-              const token = tokenRes.access_token;
-              setIsSyncing(true);
-
-              // 1. Fetch user info
-              const profile = await fetchUserProfile(token);
-
-              // 2. Find or create Gist
-              const gistInfo = await findOrCreateGist(token, sectionsRef.current);
-
-              const newSettings: SyncSettings = {
-                enabled: true,
-                authType: 'device_flow',
-                token,
-                gistId: gistInfo.gistId,
-                userLogin: profile.login,
-                userAvatarUrl: profile.avatar_url,
-                lastSyncedAt: gistInfo.updatedAt,
-                customClientId: clientId !== DEFAULT_GITHUB_CLIENT_ID ? clientId : undefined,
-              };
-
-              await saveSyncSettings(newSettings);
-              setSyncSettings(newSettings);
-
-              // If Gist already had data, apply it to the UI
-              if (!gistInfo.isNew && gistInfo.sections && gistInfo.sections.length > 0) {
-                onRemoteSectionsLoaded(gistInfo.sections);
-              }
-
-              setDeviceFlow({
-                step: 'success',
-                userCode: null,
-                verificationUri: 'https://github.com/login/device',
-                errorMsg: null,
-              });
-              setIsSyncing(false);
-              return;
-            }
-
-            if (tokenRes.error === 'slow_down') {
-              pollIntervalMs += 5000;
-            } else if (tokenRes.error === 'authorization_pending') {
-              // Still waiting, keep standard interval
-            } else if (tokenRes.error) {
-              setDeviceFlow((prev) => ({
-                ...prev,
-                step: 'error',
-                errorMsg: `Авторизация отклонена: ${tokenRes.error}`,
-              }));
-              return;
-            }
-          } catch (err) {
-            console.warn('[useSync] Polling error:', err);
-          }
-
-          pollingTimerRef.current = window.setTimeout(poll, pollIntervalMs);
+        const newSettings: SyncSettings = {
+          enabled: true,
+          authType: 'device_flow',
+          token,
+          gistId: gistInfo.gistId,
+          userLogin: profile.login,
+          userAvatarUrl: profile.avatar_url,
+          lastSyncedAt: gistInfo.updatedAt,
+          customClientId: clientId !== DEFAULT_GITHUB_CLIENT_ID ? clientId : undefined,
         };
 
-        pollingTimerRef.current = window.setTimeout(poll, pollIntervalMs);
-      } catch (err) {
-        setDeviceFlow({
-          step: 'error',
-          userCode: null,
-          verificationUri: 'https://github.com/login/device',
-          errorMsg: err instanceof Error ? err.message : 'Не удалось связаться с GitHub',
-        });
+        await saveSyncSettings(newSettings);
+        setSyncSettings(newSettings);
+
+        if (!gistInfo.isNew && gistInfo.sections && gistInfo.sections.length > 0) {
+          onRemoteSectionsLoaded(gistInfo.sections);
+        }
+      } finally {
+        setIsSyncing(false);
       }
     },
-    [cancelDeviceFlow, syncSettings.customClientId, onRemoteSectionsLoaded]
+    [onRemoteSectionsLoaded]
   );
+
+  const { deviceFlow, startDeviceFlow, cancelDeviceFlow } = useDeviceFlow({
+    customClientId: syncSettings.customClientId,
+    onTokenReceived: handleTokenFromDeviceFlow,
+  });
 
   /**
    * Connect using Personal Access Token (PAT)
@@ -204,10 +93,7 @@ export function useSync(
       setSyncError(null);
 
       try {
-        // 1. Fetch user profile to validate token
         const profile = await fetchUserProfile(token);
-
-        // 2. Find or create Gist
         const gistInfo = await findOrCreateGist(token, sectionsRef.current);
 
         const newSettings: SyncSettings = {
@@ -223,7 +109,6 @@ export function useSync(
         await saveSyncSettings(newSettings);
         setSyncSettings(newSettings);
 
-        // If existing Gist found, update local data
         if (!gistInfo.isNew && gistInfo.sections && gistInfo.sections.length > 0) {
           onRemoteSectionsLoaded(gistInfo.sections);
         }
@@ -269,13 +154,11 @@ export function useSync(
       const localUpdatedAt = localLastUpdatedAtRef.current;
 
       if (remoteUpdatedAt > localUpdatedAt) {
-        // Remote is newer: update local state
         if (remoteData.sections && remoteData.sections.length > 0) {
           onRemoteSectionsLoaded(remoteData.sections);
           localLastUpdatedAtRef.current = remoteUpdatedAt;
         }
       } else if (localUpdatedAt > remoteUpdatedAt) {
-        // Local is newer: push to Gist
         const pushRes = await pushGistData(
           syncSettings.token,
           syncSettings.gistId,
@@ -354,7 +237,6 @@ export function useSync(
     const handleFocus = () => {
       const now = Date.now();
       const lastSync = syncSettings.lastSyncedAt || 0;
-      // Pull only if more than 45 seconds since last sync
       if (now - lastSync > 45_000) {
         syncNow();
       }
