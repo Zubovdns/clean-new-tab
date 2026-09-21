@@ -6,20 +6,23 @@ import type { PluginOption } from 'vite';
 export const stripDevIcons = (isDev: boolean): PluginOption => {
   if (isDev) return null;
 
+  let outDir = '';
+
   return {
     name: 'strip-dev-icons',
-    resolveId(source: string) {
-      return source === 'virtual-module' ? source : null;
+    configResolved(config) {
+      outDir = config.build.outDir;
     },
-    renderStart(outputOptions: { dir?: string }) {
-      const outDir = outputOptions.dir;
+    closeBundle() {
       if (!outDir) return;
-      fs.rm(resolve(outDir, 'dev-icon-32.png'), { force: true }, (err) => {
-        if (!err) console.log('Deleted dev-icon-32.png from prod build');
-      });
-      fs.rm(resolve(outDir, 'dev-icon-128.png'), { force: true }, (err) => {
-        if (!err) console.log('Deleted dev-icon-128.png from prod build');
-      });
+      const icon32 = resolve(outDir, 'dev-icon-32.png');
+      const icon128 = resolve(outDir, 'dev-icon-128.png');
+      if (fs.existsSync(icon32)) {
+        fs.rmSync(icon32, { force: true });
+      }
+      if (fs.existsSync(icon128)) {
+        fs.rmSync(icon128, { force: true });
+      }
     },
   };
 };

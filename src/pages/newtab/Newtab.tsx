@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
+import { NewtabProvider, NewtabContextType } from '@/context/NewtabContext';
 import {
   ChromeShortcutItem,
   ChromeSection,
@@ -161,81 +162,93 @@ export const Newtab = () => {
     }
   }, [isDraggingRef]);
 
+  const contextValue: NewtabContextType = useMemo(
+    () => ({
+      isDark,
+      activeMenuId,
+      setActiveMenuId,
+      editingSectionId,
+      editingSectionTitle,
+      setEditingSectionId,
+      setEditingSectionTitle,
+      onStartEditingSection: handleStartEditingSection,
+      onSaveEditingSection: handleSaveEditingSection,
+      onDeleteSection: handleDeleteSection,
+      onOpenAddModal: handleOpenAddModal,
+      onEditShortcut: setEditingShortcut,
+      onDeleteShortcut: deleteShortcut,
+      onItemClick: handleItemClick,
+      getCachedFavicon,
+      draggedSectionIndex,
+      dragOverSectionGap,
+      draggedItemCoords,
+      dragOverItemInfo,
+      dragOverSectionEndId,
+      onSectionDragStart: handleSectionDragStart,
+      onSectionDragEnd: handleSectionDragEnd,
+      onSectionDragOver: handleSectionDragOver,
+      onSectionDrop: handleSectionDrop,
+      onSectionBodyDragOver: handleSectionBodyDragOver,
+      onSectionBodyDrop: handleSectionBodyDrop,
+      onItemDragStart: handleItemDragStart,
+      onItemDragEnd: handleItemDragEnd,
+      onItemDragOver: handleItemDragOver,
+      onItemDrop: handleItemDrop,
+    }),
+    [
+      isDark,
+      activeMenuId,
+      editingSectionId,
+      editingSectionTitle,
+      handleStartEditingSection,
+      handleSaveEditingSection,
+      handleDeleteSection,
+      handleOpenAddModal,
+      deleteShortcut,
+      handleItemClick,
+      getCachedFavicon,
+      draggedSectionIndex,
+      dragOverSectionGap,
+      draggedItemCoords,
+      dragOverItemInfo,
+      dragOverSectionEndId,
+      handleSectionDragStart,
+      handleSectionDragEnd,
+      handleSectionDragOver,
+      handleSectionDrop,
+      handleSectionBodyDragOver,
+      handleSectionBodyDrop,
+      handleItemDragStart,
+      handleItemDragEnd,
+      handleItemDragOver,
+      handleItemDrop,
+    ]
+  );
+
   if (!isLoaded) {
     return <div className={`min-h-screen ${isDark ? 'bg-[#202124]' : 'bg-white'}`} />;
   }
 
   return (
-    <div
-      className={`min-h-screen flex flex-col items-center justify-start font-sans transition-colors duration-150 py-12 px-6 select-none ${
-        isDark ? 'bg-[#202124] text-[#e8eaed]' : 'bg-white text-[#202124]'
-      }`}
-      onClick={() => {
-        if (activeMenuId) setActiveMenuId(null);
-        if (editingSectionId) handleSaveEditingSection();
-      }}
-    >
-      <div className="w-full max-w-[820px] flex flex-col gap-8">
-        {sections.map((section, sIdx) => {
-          const isDraggingThisSection = draggedSectionIndex === sIdx;
-          const isLastSection = sIdx === sections.length - 1;
-          const isSelfGap =
-            draggedSectionIndex !== null &&
-            (dragOverSectionGap === draggedSectionIndex || dragOverSectionGap === draggedSectionIndex + 1);
-
-          const showSectionDropIndicatorBefore =
-            draggedSectionIndex !== null &&
-            !isDraggingThisSection &&
-            !isSelfGap &&
-            dragOverSectionGap === sIdx;
-
-          const showSectionDropIndicatorAfter =
-            draggedSectionIndex !== null &&
-            !isDraggingThisSection &&
-            !isSelfGap &&
-            isLastSection &&
-            dragOverSectionGap === sections.length;
-
-          return (
+    <NewtabProvider value={contextValue}>
+      <div
+        className={`min-h-screen flex flex-col items-center justify-start font-sans transition-colors duration-150 py-12 px-6 select-none ${
+          isDark ? 'bg-[#202124] text-[#e8eaed]' : 'bg-white text-[#202124]'
+        }`}
+        onClick={() => {
+          if (activeMenuId) setActiveMenuId(null);
+          if (editingSectionId) handleSaveEditingSection();
+        }}
+      >
+        <div className="w-full max-w-[820px] flex flex-col gap-8">
+          {sections.map((section, sIdx) => (
             <SectionCard
               key={section.id}
               section={section}
               sectionIndex={sIdx}
-              isDark={isDark}
-              isDraggingThisSection={isDraggingThisSection}
-              draggedSectionIndex={draggedSectionIndex}
-              showSectionDropIndicatorBefore={showSectionDropIndicatorBefore}
-              showSectionDropIndicatorAfter={showSectionDropIndicatorAfter}
-              draggedItemCoords={draggedItemCoords}
-              dragOverItemInfo={dragOverItemInfo}
-              dragOverSectionEndId={dragOverSectionEndId}
-              onSectionDragStart={handleSectionDragStart}
-              onSectionDragEnd={handleSectionDragEnd}
-              onSectionDragOver={handleSectionDragOver}
-              onSectionDrop={handleSectionDrop}
-              onSectionBodyDragOver={handleSectionBodyDragOver}
-              onSectionBodyDrop={handleSectionBodyDrop}
-              onItemClick={handleItemClick}
-              onItemDragStart={handleItemDragStart}
-              onItemDragEnd={handleItemDragEnd}
-              onItemDragOver={handleItemDragOver}
-              onItemDrop={handleItemDrop}
-              onOpenAddModal={handleOpenAddModal}
-              onStartEditingSection={handleStartEditingSection}
-              onSaveEditingSection={handleSaveEditingSection}
-              onDeleteSection={handleDeleteSection}
-              editingSectionId={editingSectionId}
-              editingSectionTitle={editingSectionTitle}
-              setEditingSectionTitle={setEditingSectionTitle}
-              setEditingSectionId={setEditingSectionId}
-              onEditShortcut={setEditingShortcut}
-              onDeleteShortcut={deleteShortcut}
-              getCachedFavicon={getCachedFavicon}
-              activeMenuId={activeMenuId}
-              setActiveMenuId={setActiveMenuId}
+              totalSections={sections.length}
             />
-          );
-        })}
+          ))}
 
         {/* Add section button */}
         <div className="flex justify-center pt-2 pb-6">
@@ -328,7 +341,8 @@ export const Newtab = () => {
         onDisconnect={disconnect}
         onSyncNow={syncNow}
       />
-    </div>
+      </div>
+    </NewtabProvider>
   );
 };
 

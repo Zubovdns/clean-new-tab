@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Custom New Tab override extension for Brave and Chromium browsers built with Vite, React, TypeScript, and Tailwind CSS.",
   "scripts": {
-    "dev": "vite --config vite.config.chrome.ts",
+    "dev": "vite build --watch --config vite.config.chrome.ts --mode development",
+    "dev:chrome": "vite build --watch --config vite.config.chrome.ts --mode development",
+    "dev:firefox": "vite build --watch --config vite.config.firefox.ts --mode development",
     "dev:watch": "nodemon --config nodemon.chrome.json",
     "build": "vite build --config vite.config.chrome.ts",
     "build:chrome": "vite build --config vite.config.chrome.ts",

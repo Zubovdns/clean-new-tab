@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useSyncExternalStore, useEffect } from 'react';
 
 const subscribe = (callback: () => void) => {
   if (typeof window === 'undefined' || !window.matchMedia) {
@@ -20,8 +20,17 @@ const getServerSnapshot = (): boolean => true;
 
 /**
  * Hook to detect and track system color scheme (dark / light)
+ * Automatically syncs 'dark' class on document.documentElement
  */
 export const useTheme = (): boolean => {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const isDark = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('dark', isDark);
+    }
+  }, [isDark]);
+
+  return isDark;
 };
 
