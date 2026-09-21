@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CHROME_NTP_FAVICON_CACHE_KEY, getFaviconCache } from '@utils/storage';
+
 import { getDomain } from '@utils/favicon';
+import { CHROME_NTP_FAVICON_CACHE_KEY, getFaviconCache } from '@utils/storage';
 
 /**
  * Hook to manage real-time favicon cache in chrome.storage.local
  */
-export function useFaviconCache() {
+export const useFaviconCache = () => {
   const [faviconCache, setFaviconCache] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -56,6 +57,5 @@ export function useFaviconCache() {
   );
 
   return { getCachedFavicon };
-}
+};
 
-export default useFaviconCache;

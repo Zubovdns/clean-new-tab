@@ -7,12 +7,12 @@ export interface AddSectionModalProps {
   onCreate: (title: string) => void;
 }
 
-export function AddSectionModal({
+export const AddSectionModal = React.memo(({
   isOpen,
   isDark,
   onClose,
   onCreate,
-}: AddSectionModalProps) {
+}: AddSectionModalProps) => {
   const [title, setTitle] = useState('');
 
   useEffect(() => {
@@ -90,7 +90,6 @@ export function AddSectionModal({
       </div>
     </div>
   );
-}
+});
 
-export default React.memo(AddSectionModal);
-
+AddSectionModal.displayName = 'AddSectionModal';

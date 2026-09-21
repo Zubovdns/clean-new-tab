@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+
 import { getFaviconCandidates } from '@utils/favicon';
 
 export interface FaviconImageProps {
@@ -13,7 +14,7 @@ export interface FaviconImageProps {
   cachedFavicon?: string;
 }
 
-export function FaviconImage({
+export const FaviconImage = React.memo(({
   url,
   title,
   size = 32,
@@ -23,17 +24,16 @@ export function FaviconImage({
   hideOnFallback = false,
   customFavicon,
   cachedFavicon,
-}: FaviconImageProps) {
-  const activeCachedFavicon = customFavicon || cachedFavicon;
+}: FaviconImageProps) => {
   const candidates = useMemo(
-    () => getFaviconCandidates(url, size, activeCachedFavicon),
-    [url, size, activeCachedFavicon]
+    () => getFaviconCandidates(url, size, customFavicon, cachedFavicon),
+    [url, size, customFavicon, cachedFavicon]
   );
   const [candidateIndex, setCandidateIndex] = useState(0);
 
   useEffect(() => {
     setCandidateIndex(0);
-  }, [url, activeCachedFavicon]);
+  }, [url, customFavicon, cachedFavicon]);
 
   const nextCandidate = () => {
     setCandidateIndex((prev) => prev + 1);
@@ -82,7 +82,6 @@ export function FaviconImage({
       onLoad={handleLoad}
     />
   );
-}
+});
 
-export default React.memo(FaviconImage);
-
+FaviconImage.displayName = 'FaviconImage';

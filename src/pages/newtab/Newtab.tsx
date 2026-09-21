@@ -1,21 +1,34 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+
 import {
   ChromeShortcutItem,
   ChromeSection,
   EditingShortcutData,
 } from '@app-types';
-import useTheme from '@hooks/useTheme';
-import useFaviconCache from '@hooks/useFaviconCache';
-import useSections from '@hooks/useSections';
-import SectionCard from '@components/section/SectionCard';
-import AddSectionModal from '@components/modals/AddSectionModal';
-import AddItemModal from '@components/modals/AddItemModal';
-import EditShortcutModal from '@components/modals/EditShortcutModal';
-import Icon from '@components/common/Icon';
+import { Icon } from '@components/common/Icon';
+import { AddItemModal } from '@components/modals/AddItemModal';
+import { AddSectionModal } from '@components/modals/AddSectionModal';
+import { EditShortcutModal } from '@components/modals/EditShortcutModal';
+import { SettingsModal } from '@components/modals/SettingsModal';
+import { SectionCard } from '@components/section/SectionCard';
+import { useFaviconCache } from '@hooks/useFaviconCache';
+import { useNewtabDragAndDrop } from '@hooks/useNewtabDragAndDrop';
+import { useSections } from '@hooks/useSections';
+import { useSync } from '@hooks/useSync';
+import { useTheme } from '@hooks/useTheme';
 
-export default function Newtab() {
+export const Newtab = () => {
   const isDark = useTheme();
   const { getCachedFavicon } = useFaviconCache();
+
+  const syncNotifyRef = useRef<((s: ChromeSection[]) => void) | null>(null);
+
+  const handleSectionsChangedLocally = useCallback((updated: ChromeSection[]) => {
+    if (syncNotifyRef.current) {
+      syncNotifyRef.current(updated);
+    }
+  }, []);
+
   const {
     sections,
     isLoaded,
@@ -29,8 +42,32 @@ export default function Newtab() {
     reorderItemsInSameSection,
     moveItemAcrossSections,
     moveItemToEndOfSection,
-  } = useSections();
+    replaceSections,
+  } = useSections(handleSectionsChangedLocally);
 
+  const handleRemoteSectionsLoaded = useCallback(
+    (remoteSections: ChromeSection[]) => {
+      replaceSections(remoteSections);
+    },
+    [replaceSections]
+  );
+
+  const {
+    syncSettings,
+    isSyncing,
+    syncError,
+    deviceFlow,
+    startDeviceFlow,
+    cancelDeviceFlow,
+    connectWithPAT,
+    disconnect,
+    syncNow,
+    notifySectionsChanged,
+  } = useSync(sections, handleRemoteSectionsLoaded);
+
+  syncNotifyRef.current = notifySectionsChanged;
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [targetSectionId, setTargetSectionId] = useState<string>('');
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
@@ -41,27 +78,31 @@ export default function Newtab() {
 
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
-  const [draggedSectionIndex, setDraggedSectionIndex] = useState<number | null>(null);
-  const [dragOverSectionGap, setDragOverSectionGap] = useState<number | null>(null);
-  const draggedSectionIndexRef = useRef<number | null>(null);
-
-  const [draggedItemCoords, setDraggedItemCoords] = useState<{
-    sectionId: string;
-    itemIndex: number;
-  } | null>(null);
-  const draggedItemCoordsRef = useRef<{
-    sectionId: string;
-    itemIndex: number;
-  } | null>(null);
-
-  const [dragOverItemInfo, setDragOverItemInfo] = useState<{
-    sectionId: string;
-    itemIndex: number;
-    position: 'before' | 'after';
-  } | null>(null);
-  const [dragOverSectionEndId, setDragOverSectionEndId] = useState<string | null>(null);
-
-  const isDraggingRef = useRef(false);
+  // Drag and drop orchestration
+  const {
+    isDraggingRef,
+    draggedSectionIndex,
+    dragOverSectionGap,
+    draggedItemCoords,
+    dragOverItemInfo,
+    dragOverSectionEndId,
+    handleSectionDragStart,
+    handleSectionDragOver,
+    handleSectionDragEnd,
+    handleSectionDrop,
+    handleItemDragStart,
+    handleItemDragOver,
+    handleItemDragEnd,
+    handleItemDrop,
+    handleSectionBodyDragOver,
+    handleSectionBodyDrop,
+  } = useNewtabDragAndDrop({
+    sections,
+    reorderSections,
+    reorderItemsInSameSection,
+    moveItemAcrossSections,
+    moveItemToEndOfSection,
+  });
 
   // Close active modals and dropdowns on Escape
   useEffect(() => {
@@ -72,6 +113,7 @@ export default function Newtab() {
         setEditingShortcut(null);
         setActiveMenuId(null);
         setEditingSectionId(null);
+        setIsSettingsOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -108,183 +150,10 @@ export default function Newtab() {
     setIsAddModalOpen(true);
   }, []);
 
-  const handleSectionDragStart = useCallback((e: React.DragEvent, index: number) => {
-    isDraggingRef.current = true;
-    draggedSectionIndexRef.current = index;
-    setDraggedSectionIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', `sec:${index}`);
-  }, []);
-
-  const handleSectionDragOver = useCallback((
-    e: React.DragEvent,
-    sectionIndex: number,
-    isBottom: boolean
-  ) => {
-    if (draggedSectionIndexRef.current === null) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    const targetGap = isBottom ? sectionIndex + 1 : sectionIndex;
-    if (dragOverSectionGap !== targetGap) {
-      setDragOverSectionGap(targetGap);
-    }
-  }, [dragOverSectionGap]);
-
-  const handleSectionDragEnd = useCallback(() => {
-    draggedSectionIndexRef.current = null;
-    setDraggedSectionIndex(null);
-    setDragOverSectionGap(null);
-    setTimeout(() => {
-      isDraggingRef.current = false;
-    }, 100);
-  }, []);
-
-  const handleSectionDrop = useCallback((
-    e: React.DragEvent,
-    sectionIndex: number,
-    isBottom: boolean
-  ) => {
-    if (draggedSectionIndexRef.current === null) return;
-    e.preventDefault();
-    e.stopPropagation();
-
-    const sourceIndex = draggedSectionIndexRef.current;
-    const targetGap = isBottom ? sectionIndex + 1 : sectionIndex;
-
-    if (targetGap !== sourceIndex && targetGap !== sourceIndex + 1) {
-      const finalIndex = targetGap > sourceIndex ? targetGap - 1 : targetGap;
-      reorderSections(sourceIndex, finalIndex);
-    }
-    handleSectionDragEnd();
-  }, [reorderSections, handleSectionDragEnd]);
-
-  const handleItemDragStart = useCallback((e: React.DragEvent, sectionId: string, itemIndex: number) => {
-    e.stopPropagation();
-    isDraggingRef.current = true;
-    const coords = { sectionId, itemIndex };
-    draggedItemCoordsRef.current = coords;
-    setDraggedItemCoords(coords);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', `item:${sectionId}:${itemIndex}`);
-  }, []);
-
-  const handleItemDragOver = useCallback((
-    e: React.DragEvent,
-    sectionId: string,
-    itemIndex: number,
-    _targetItem: ChromeShortcutItem,
-    position: 'before' | 'after'
-  ) => {
-    if (draggedSectionIndexRef.current !== null) return;
-    const source = draggedItemCoordsRef.current;
-    if (!source) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = 'move';
-
-    setDragOverSectionEndId(null);
-
-    if (
-      !dragOverItemInfo ||
-      dragOverItemInfo.sectionId !== sectionId ||
-      dragOverItemInfo.itemIndex !== itemIndex ||
-      dragOverItemInfo.position !== position
-    ) {
-      setDragOverItemInfo({ sectionId, itemIndex, position });
-    }
-  }, [dragOverItemInfo]);
-
-  const handleItemDragEnd = useCallback(() => {
-    draggedItemCoordsRef.current = null;
-    setDraggedItemCoords(null);
-    setDragOverItemInfo(null);
-    setDragOverSectionEndId(null);
-    setTimeout(() => {
-      isDraggingRef.current = false;
-    }, 100);
-  }, []);
-
-  const handleItemDrop = useCallback((
-    e: React.DragEvent,
-    targetSectionId: string,
-    targetItemIndex: number,
-    _targetItem: ChromeShortcutItem,
-    position: 'before' | 'after'
-  ) => {
-    if (draggedSectionIndexRef.current !== null) return;
-    const source = draggedItemCoordsRef.current;
-    if (!source) {
-      handleItemDragEnd();
-      return;
-    }
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Reorder within same section
-    if (source.sectionId === targetSectionId) {
-      const insertIndex = position === 'before' ? targetItemIndex : targetItemIndex + 1;
-      const finalIndex = insertIndex > source.itemIndex ? insertIndex - 1 : insertIndex;
-      if (source.itemIndex !== finalIndex) {
-        reorderItemsInSameSection(targetSectionId, source.itemIndex, finalIndex);
-      }
-      handleItemDragEnd();
-      return;
-    }
-
-    // Transfer item across sections
-    const targetIndex = position === 'before' ? targetItemIndex : targetItemIndex + 1;
-    moveItemAcrossSections(source.sectionId, source.itemIndex, targetSectionId, targetIndex);
-    handleItemDragEnd();
-  }, [reorderItemsInSameSection, moveItemAcrossSections, handleItemDragEnd]);
-
-  const handleSectionBodyDragOver = useCallback((e: React.DragEvent, sectionId: string) => {
-    if (draggedSectionIndexRef.current !== null) return;
-    if (draggedItemCoordsRef.current === null) return;
-    if (dragOverItemInfo) return;
-
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (dragOverSectionEndId !== sectionId) {
-      setDragOverSectionEndId(sectionId);
-    }
-  }, [dragOverItemInfo, dragOverSectionEndId]);
-
-  const handleSectionBodyDrop = useCallback((e: React.DragEvent, targetSectionId: string) => {
-    if (draggedSectionIndexRef.current !== null) return;
-    const source = draggedItemCoordsRef.current;
-    if (!source) {
-      handleItemDragEnd();
-      return;
-    }
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const targetSec = sections.find((s) => s.id === targetSectionId);
-    if (!targetSec) {
-      handleItemDragEnd();
-      return;
-    }
-
-    if (source.sectionId === targetSectionId) {
-      const finalIndex = targetSec.items.length - 1;
-      if (source.itemIndex !== finalIndex) {
-        reorderItemsInSameSection(targetSectionId, source.itemIndex, finalIndex);
-      }
-      handleItemDragEnd();
-      return;
-    }
-
-    moveItemToEndOfSection(source.sectionId, source.itemIndex, targetSectionId);
-    handleItemDragEnd();
-  }, [sections, reorderItemsInSameSection, moveItemToEndOfSection, handleItemDragEnd]);
-
   const handleItemClick = useCallback((item: ChromeShortcutItem) => {
     if (isDraggingRef.current) return;
     window.location.href = item.url;
-  }, []);
+  }, [isDraggingRef]);
 
   if (!isLoaded) {
     return <div className={`min-h-screen ${isDark ? 'bg-[#202124]' : 'bg-white'}`} />;
@@ -379,6 +248,39 @@ export default function Newtab() {
         </div>
       </div>
 
+      {/* Floating Settings & Sync Button */}
+      <div className="fixed top-5 right-6 z-30 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setIsSettingsOpen(true)}
+          className={`group flex items-center gap-2 px-3 py-2 rounded-full border text-xs font-medium cursor-pointer transition-all shadow-xs ${
+            isDark
+              ? 'border-[#3c4043] bg-[#28292c]/80 hover:bg-[#35363a] text-[#e8eaed] hover:border-[#8ab4f8]'
+              : 'border-[#dadce0] bg-white/90 hover:bg-[#f1f3f4] text-[#202124] hover:border-[#1a73e8]'
+          }`}
+          title={
+            syncSettings.enabled
+              ? `Синхронизация активна (@${syncSettings.userLogin || 'GitHub'})`
+              : 'Настройки и синхронизация'
+          }
+        >
+          <Icon
+            name="settings"
+            size={16}
+            className={`transition-transform duration-300 group-hover:rotate-45 ${
+              isSyncing ? 'animate-spin text-[#8ab4f8]' : ''
+            }`}
+          />
+          {syncSettings.enabled && (
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isSyncing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'
+              }`}
+            />
+          )}
+        </button>
+      </div>
+
       <AddSectionModal
         isOpen={isAddSectionModalOpen}
         isDark={isDark}
@@ -403,6 +305,24 @@ export default function Newtab() {
         onSave={saveEditShortcut}
         onDelete={deleteShortcut}
       />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        isDark={isDark}
+        onClose={() => setIsSettingsOpen(false)}
+        sections={sections}
+        onImportSections={replaceSections}
+        syncSettings={syncSettings}
+        isSyncing={isSyncing}
+        syncError={syncError}
+        deviceFlow={deviceFlow}
+        onStartDeviceFlow={startDeviceFlow}
+        onCancelDeviceFlow={cancelDeviceFlow}
+        onConnectWithPAT={connectWithPAT}
+        onDisconnect={disconnect}
+        onSyncNow={syncNow}
+      />
     </div>
   );
-}
+};
+

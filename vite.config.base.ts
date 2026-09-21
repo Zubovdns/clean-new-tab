@@ -1,12 +1,13 @@
-import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
 import { ManifestV3Export } from '@crxjs/vite-plugin';
 import tailwindcss from "@tailwindcss/vite";
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 import { defineConfig, BuildOptions } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths'
+
 import { stripDevIcons, crxI18n } from './custom-vite-plugins';
-import manifest from './manifest.json';
 import devManifest from './manifest.dev.json';
+import manifest from './manifest.json';
 import pkg from './package.json';
 
 
@@ -35,6 +36,19 @@ export const baseBuildOptions: BuildOptions = {
 }
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src'),
+      '@src': resolve(__dirname, 'src'),
+      '@components': resolve(__dirname, 'src/components'),
+      '@assets': resolve(__dirname, 'src/assets'),
+      '@locales': resolve(__dirname, 'src/locales'),
+      '@pages': resolve(__dirname, 'src/pages'),
+      '@utils': resolve(__dirname, 'src/utils'),
+      '@hooks': resolve(__dirname, 'src/hooks'),
+      '@app-types': resolve(__dirname, 'src/types'),
+    },
+  },
   plugins: [
     tailwindcss(),
     tsconfigPaths(),
