@@ -115,7 +115,7 @@ export function GridItemCard({
           className="w-6 h-6 object-contain pointer-events-none"
           letterClassName={isDark ? 'text-[#8ab4f8] text-[18px]' : 'text-[#1a73e8] text-[18px]'}
           customFavicon={item.favicon}
-          cachedFavicon={getCachedFavicon(item.url, item.favicon)}
+          cachedFavicon={getCachedFavicon(item.url)}
         />
       </div>
 

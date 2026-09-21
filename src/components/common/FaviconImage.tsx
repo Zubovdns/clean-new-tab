@@ -24,16 +24,15 @@ export function FaviconImage({
   customFavicon,
   cachedFavicon,
 }: FaviconImageProps) {
-  const activeCachedFavicon = customFavicon || cachedFavicon;
   const candidates = useMemo(
-    () => getFaviconCandidates(url, size, activeCachedFavicon),
-    [url, size, activeCachedFavicon]
+    () => getFaviconCandidates(url, size, customFavicon, cachedFavicon),
+    [url, size, customFavicon, cachedFavicon]
   );
   const [candidateIndex, setCandidateIndex] = useState(0);
 
   useEffect(() => {
     setCandidateIndex(0);
-  }, [url, activeCachedFavicon]);
+  }, [url, customFavicon, cachedFavicon]);
 
   const nextCandidate = () => {
     setCandidateIndex((prev) => prev + 1);
