@@ -65,7 +65,9 @@ export const Newtab = () => {
     notifySectionsChanged,
   } = useSync(sections, handleRemoteSectionsLoaded);
 
-  syncNotifyRef.current = notifySectionsChanged;
+  useEffect(() => {
+    syncNotifyRef.current = notifySectionsChanged;
+  }, [notifySectionsChanged]);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);

@@ -1,23 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
+
+const subscribe = (callback: () => void) => {
+  if (typeof window === 'undefined' || !window.matchMedia) {
+    return () => {};
+  }
+  const media = window.matchMedia('(prefers-color-scheme: dark)');
+  media.addEventListener('change', callback);
+  return () => media.removeEventListener('change', callback);
+};
+
+const getSnapshot = (): boolean => {
+  if (typeof window === 'undefined' || !window.matchMedia) {
+    return true;
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+};
+
+const getServerSnapshot = (): boolean => true;
 
 /**
  * Hook to detect and track system color scheme (dark / light)
  */
 export const useTheme = (): boolean => {
-  const [isDark, setIsDark] = useState(true);
-
-  useEffect(() => {
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-    setIsDark(media.matches);
-
-    const listener = (e: MediaQueryListEvent) => {
-      setIsDark(e.matches);
-    };
-
-    media.addEventListener('change', listener);
-    return () => media.removeEventListener('change', listener);
-  }, []);
-
-  return isDark;
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 };
 

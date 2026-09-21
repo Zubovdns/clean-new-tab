@@ -18,7 +18,10 @@ export const useSections = (onSectionsChangedLocally?: (updated: ChromeSection[]
   const [isLoaded, setIsLoaded] = useState(false);
   const hasRequestedFaviconsRef = useRef(false);
   const onSectionsChangedRef = useRef(onSectionsChangedLocally);
-  onSectionsChangedRef.current = onSectionsChangedLocally;
+
+  useEffect(() => {
+    onSectionsChangedRef.current = onSectionsChangedLocally;
+  }, [onSectionsChangedLocally]);
 
   // Load saved sections on mount
   useEffect(() => {
