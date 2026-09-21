@@ -16,7 +16,7 @@ export const DEFAULT_SYNC_SETTINGS: SyncSettings = {
 /**
  * Load sync settings from storage
  */
-export async function getSyncSettings(): Promise<SyncSettings> {
+export const getSyncSettings = async (): Promise<SyncSettings> => {
 	try {
 		if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
 			const result = await chrome.storage.local.get([
@@ -38,12 +38,12 @@ export async function getSyncSettings(): Promise<SyncSettings> {
 		console.warn('[githubSync] Error loading sync settings:', err);
 	}
 	return DEFAULT_SYNC_SETTINGS;
-}
+};
 
 /**
  * Save sync settings to storage
  */
-export async function saveSyncSettings(settings: SyncSettings): Promise<void> {
+export const saveSyncSettings = async (settings: SyncSettings): Promise<void> => {
 	try {
 		if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
 			await chrome.storage.local.set({
@@ -58,4 +58,4 @@ export async function saveSyncSettings(settings: SyncSettings): Promise<void> {
 	} catch (err) {
 		console.warn('[githubSync] Error saving sync settings:', err);
 	}
-}
+};

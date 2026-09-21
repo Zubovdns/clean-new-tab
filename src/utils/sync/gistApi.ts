@@ -5,10 +5,10 @@ export const GIST_FILENAME = 'clean-new-tab.json';
 /**
  * Pull sections data from Gist
  */
-export async function pullGistData(
+export const pullGistData = async (
 	token: string,
 	gistId: string,
-): Promise<SyncPayload> {
+): Promise<SyncPayload> => {
 	const res = await fetch(`https://api.github.com/gists/${gistId}`, {
 		headers: {
 			Authorization: `Bearer ${token}`,
@@ -38,16 +38,16 @@ export async function pullGistData(
 			typeof parsed.updatedAt === 'number' ? parsed.updatedAt : Date.now(),
 		sections: parsed.sections,
 	};
-}
+};
 
 /**
  * Push sections data to Gist
  */
-export async function pushGistData(
+export const pushGistData = async (
 	token: string,
 	gistId: string,
 	sections: ChromeSection[],
-): Promise<{ updatedAt: number }> {
+): Promise<{ updatedAt: number }> => {
 	const now = Date.now();
 	const payload: SyncPayload = {
 		version: 1,
@@ -77,12 +77,12 @@ export async function pushGistData(
 	}
 
 	return { updatedAt: now };
-}
+};
 
 /**
  * Find existing Clean New Tab Gist or create a new secret one
  */
-export async function findOrCreateGist(
+export const findOrCreateGist = async (
 	token: string,
 	currentSections: ChromeSection[],
 ): Promise<{
@@ -90,7 +90,7 @@ export async function findOrCreateGist(
 	sections: ChromeSection[];
 	isNew: boolean;
 	updatedAt: number;
-}> {
+}> => {
 	// 1. List user gists
 	const listRes = await fetch('https://api.github.com/gists?per_page=100', {
 		headers: {
@@ -162,4 +162,4 @@ export async function findOrCreateGist(
 		updatedAt: now,
 		isNew: true,
 	};
-}
+};

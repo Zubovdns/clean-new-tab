@@ -10,14 +10,14 @@ export interface AddItemModalProps {
   onSaveShortcut: (sectionId: string, data: { title: string; url: string; favicon?: string }) => void;
 }
 
-export function AddItemModal({
+export const AddItemModal = React.memo(({
   isOpen,
   isDark,
   sections,
   targetSectionId: initialSectionId,
   onClose,
   onSaveShortcut,
-}: AddItemModalProps) {
+}: AddItemModalProps) => {
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [favicon, setFavicon] = useState('');
@@ -167,6 +167,7 @@ export function AddItemModal({
       </div>
     </div>
   );
-}
+});
 
-export default React.memo(AddItemModal);
+AddItemModal.displayName = 'AddItemModal';
+

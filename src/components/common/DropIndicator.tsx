@@ -6,7 +6,7 @@ export interface DropIndicatorProps {
   className?: string;
 }
 
-export function DropIndicator({ type, position, className = '' }: DropIndicatorProps) {
+export const DropIndicator = React.memo(({ type, position, className = '' }: DropIndicatorProps) => {
   if (type === 'vertical') {
     const posClass = position === 'before' ? '-left-[6px]' : '-right-[6px]';
     return (
@@ -28,6 +28,6 @@ export function DropIndicator({ type, position, className = '' }: DropIndicatorP
       <div className="absolute -right-1 -top-[3px] w-2.5 h-2.5 rounded-full bg-[#1a73e8] dark:bg-[#8ab4f8] shadow-sm" />
     </div>
   );
-}
+});
 
-export default React.memo(DropIndicator);
+DropIndicator.displayName = 'DropIndicator';

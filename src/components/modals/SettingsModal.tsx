@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ChromeSection, SyncSettings } from '../../types';
-import Icon from '../common/Icon';
+import { Icon } from '../common/Icon';
 import { DeviceFlowState } from '../../hooks/useSync';
-import SyncConnectedView from './settings/SyncConnectedView';
-import SyncDeviceFlowTab from './settings/SyncDeviceFlowTab';
-import SyncPatTab from './settings/SyncPatTab';
-import SyncAdvancedConfig from './settings/SyncAdvancedConfig';
-import BackupSection from './settings/BackupSection';
+import { SyncConnectedView } from './settings/SyncConnectedView';
+import { SyncDeviceFlowTab } from './settings/SyncDeviceFlowTab';
+import { SyncPatTab } from './settings/SyncPatTab';
+import { SyncAdvancedConfig } from './settings/SyncAdvancedConfig';
+import { BackupSection } from './settings/BackupSection';
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -25,7 +25,7 @@ export interface SettingsModalProps {
   onSyncNow: () => void;
 }
 
-export function SettingsModal({
+export const SettingsModal = React.memo(({
   isOpen,
   isDark,
   onClose,
@@ -40,7 +40,7 @@ export function SettingsModal({
   onConnectWithPAT,
   onDisconnect,
   onSyncNow,
-}: SettingsModalProps) {
+}: SettingsModalProps) => {
   const [activeTab, setActiveTab] = useState<'device' | 'pat'>('device');
   const [customClientId, setCustomClientId] = useState('');
 
@@ -181,6 +181,6 @@ export function SettingsModal({
       </div>
     </div>
   );
-}
+});
 
-export default React.memo(SettingsModal);
+SettingsModal.displayName = 'SettingsModal';

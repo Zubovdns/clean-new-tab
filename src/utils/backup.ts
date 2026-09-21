@@ -4,7 +4,7 @@ import { CHROME_NTP_SECTIONS_KEY, setStorageItem } from './storage';
 /**
  * Export sections to a downloadable JSON file
  */
-export function exportSectionsToFile(sections: ChromeSection[]): void {
+export const exportSectionsToFile = (sections: ChromeSection[]): void => {
 	const data = JSON.stringify(
 		{
 			exportedAt: new Date().toISOString(),
@@ -23,12 +23,12 @@ export function exportSectionsToFile(sections: ChromeSection[]): void {
 	a.click();
 	document.body.removeChild(a);
 	URL.revokeObjectURL(url);
-}
+};
 
 /**
  * Import sections from a JSON file
  */
-export function importSectionsFromFile(): Promise<ChromeSection[]> {
+export const importSectionsFromFile = (): Promise<ChromeSection[]> => {
 	return new Promise((resolve, reject) => {
 		const input = document.createElement('input');
 		input.type = 'file';
@@ -52,4 +52,4 @@ export function importSectionsFromFile(): Promise<ChromeSection[]> {
 		};
 		input.click();
 	});
-}
+};

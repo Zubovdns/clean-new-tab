@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 /**
  * Hook to detect and track system color scheme (dark / light)
  */
-export function useTheme(): boolean {
+export const useTheme = (): boolean => {
   const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
@@ -19,6 +19,5 @@ export function useTheme(): boolean {
   }, []);
 
   return isDark;
-}
+};
 
-export default useTheme;

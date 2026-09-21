@@ -12,7 +12,7 @@ import {
 } from '@utils/storage';
 import { getDomain } from '@utils/favicon';
 
-export function useSections(onSectionsChangedLocally?: (updated: ChromeSection[]) => void) {
+export const useSections = (onSectionsChangedLocally?: (updated: ChromeSection[]) => void) => {
   const [sections, setSections] = useState<ChromeSection[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const hasRequestedFaviconsRef = useRef(false);
@@ -270,6 +270,6 @@ export function useSections(onSectionsChangedLocally?: (updated: ChromeSection[]
     moveItemToEndOfSection,
     replaceSections,
   };
-}
+};
 
-export default useSections;
+

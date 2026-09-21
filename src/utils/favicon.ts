@@ -2,7 +2,7 @@
  * Favicon helper functions and candidate URL resolution
  */
 
-export function getDomain(rawUrl: string): string {
+export const getDomain = (rawUrl: string): string => {
   try {
     const url = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
       ? rawUrl
@@ -11,14 +11,14 @@ export function getDomain(rawUrl: string): string {
   } catch {
     return rawUrl;
   }
-}
+};
 
-export function getFaviconCandidates(
+export const getFaviconCandidates = (
   rawUrl: string,
   size = 32,
   customFavicon?: string,
   cachedFavicon?: string
-): string[] {
+): string[] => {
   const targetUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
     ? rawUrl
     : `https://${rawUrl}`;
@@ -93,5 +93,5 @@ export function getFaviconCandidates(
   }
 
   return candidates;
-}
+};
 

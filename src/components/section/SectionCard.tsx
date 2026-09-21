@@ -4,9 +4,9 @@ import {
   ChromeSection,
   EditingShortcutData,
 } from '@app-types';
-import GridItemCard from '@components/grid/GridItemCard';
-import Icon from '@components/common/Icon';
-import DropIndicator from '@components/common/DropIndicator';
+import { GridItemCard } from '@components/grid/GridItemCard';
+import { Icon } from '@components/common/Icon';
+import { DropIndicator } from '@components/common/DropIndicator';
 
 export interface SectionCardProps {
   section: ChromeSection;
@@ -57,7 +57,7 @@ export interface SectionCardProps {
   setActiveMenuId: (id: string | null) => void;
 }
 
-export function SectionCard({
+export const SectionCard = React.memo(({
   section,
   sectionIndex,
   isDark,
@@ -92,7 +92,7 @@ export function SectionCard({
   getCachedFavicon,
   activeMenuId,
   setActiveMenuId,
-}: SectionCardProps) {
+}: SectionCardProps) => {
   const isEditingTitle = editingSectionId === section.id;
   const isSecMenuOpen = activeMenuId === `sec-menu-${section.id}`;
   const isDraggingSection = draggedSectionIndex !== null;
@@ -368,6 +368,6 @@ export function SectionCard({
       </div>
     </div>
   );
-}
+});
 
-export default React.memo(SectionCard);
+SectionCard.displayName = 'SectionCard';

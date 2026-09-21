@@ -10,14 +10,14 @@ import {
   pullGistData,
   pushGistData,
 } from '@utils/sync';
-import useDeviceFlow, { DeviceFlowState } from './useDeviceFlow';
+import { useDeviceFlow, DeviceFlowState } from './useDeviceFlow';
 
 export type { DeviceFlowState };
 
-export function useSync(
+export const useSync = (
   sections: ChromeSection[],
   onRemoteSectionsLoaded: (remoteSections: ChromeSection[]) => void
-) {
+) => {
   const [syncSettings, setSyncSettings] = useState<SyncSettings>(DEFAULT_SYNC_SETTINGS);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -258,6 +258,6 @@ export function useSync(
     syncNow,
     notifySectionsChanged,
   };
-}
+};
 
-export default useSync;
+

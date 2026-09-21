@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import Icon from '../../common/Icon';
+import { Icon } from '../../common/Icon';
 
 export interface SyncPatTabProps {
   isDark: boolean;
   onConnectWithPAT: (token: string) => Promise<void>;
 }
 
-export function SyncPatTab({
+export const SyncPatTab = React.memo(({
   isDark,
   onConnectWithPAT,
-}: SyncPatTabProps) {
+}: SyncPatTabProps) => {
   const [patInput, setPatInput] = useState('');
   const [isPatSubmitting, setIsPatSubmitting] = useState(false);
   const [patError, setPatError] = useState<string | null>(null);
@@ -79,6 +79,6 @@ export function SyncPatTab({
       </button>
     </form>
   );
-}
+});
 
-export default React.memo(SyncPatTab);
+SyncPatTab.displayName = 'SyncPatTab';

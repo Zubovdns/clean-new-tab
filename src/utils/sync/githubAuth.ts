@@ -17,9 +17,9 @@ export interface PollTokenResult {
 /**
  * 1. Request device and user verification code (GitHub OAuth Device Flow)
  */
-export async function requestDeviceCode(
+export const requestDeviceCode = async (
 	clientId: string,
-): Promise<DeviceCodeResponse> {
+): Promise<DeviceCodeResponse> => {
 	const targetClientId = clientId.trim() || DEFAULT_GITHUB_CLIENT_ID;
 	const res = await fetch('https://github.com/login/device/code', {
 		method: 'POST',
@@ -51,15 +51,15 @@ export async function requestDeviceCode(
 	}
 
 	return data as DeviceCodeResponse;
-}
+};
 
 /**
  * 2. Poll GitHub token endpoint while user enters code
  */
-export async function pollDeviceToken(
+export const pollDeviceToken = async (
 	clientId: string,
 	deviceCode: string,
-): Promise<PollTokenResult> {
+): Promise<PollTokenResult> => {
 	const targetClientId = clientId.trim() || DEFAULT_GITHUB_CLIENT_ID;
 	const res = await fetch('https://github.com/login/oauth/access_token', {
 		method: 'POST',
@@ -81,14 +81,14 @@ export async function pollDeviceToken(
 
 	const data = await res.json();
 	return data as PollTokenResult;
-}
+};
 
 /**
  * Fetch authenticated GitHub user profile
  */
-export async function fetchUserProfile(
+export const fetchUserProfile = async (
 	token: string,
-): Promise<{ login: string; avatar_url: string; name?: string }> {
+): Promise<{ login: string; avatar_url: string; name?: string }> => {
 	const res = await fetch('https://api.github.com/user', {
 		headers: {
 			Authorization: `Bearer ${token}`,
@@ -101,4 +101,4 @@ export async function fetchUserProfile(
 	}
 
 	return res.json();
-}
+};

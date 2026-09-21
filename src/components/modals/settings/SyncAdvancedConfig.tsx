@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Icon from '../../common/Icon';
+import { Icon } from '../../common/Icon';
 
 export interface SyncAdvancedConfigProps {
   isDark: boolean;
@@ -7,11 +7,11 @@ export interface SyncAdvancedConfigProps {
   setCustomClientId: (id: string) => void;
 }
 
-export function SyncAdvancedConfig({
+export const SyncAdvancedConfig = React.memo(({
   isDark,
   customClientId,
   setCustomClientId,
-}: SyncAdvancedConfigProps) {
+}: SyncAdvancedConfigProps) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
@@ -60,6 +60,6 @@ export function SyncAdvancedConfig({
       )}
     </div>
   );
-}
+});
 
-export default React.memo(SyncAdvancedConfig);
+SyncAdvancedConfig.displayName = 'SyncAdvancedConfig';

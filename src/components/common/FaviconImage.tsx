@@ -13,7 +13,7 @@ export interface FaviconImageProps {
   cachedFavicon?: string;
 }
 
-export function FaviconImage({
+export const FaviconImage = React.memo(({
   url,
   title,
   size = 32,
@@ -23,7 +23,7 @@ export function FaviconImage({
   hideOnFallback = false,
   customFavicon,
   cachedFavicon,
-}: FaviconImageProps) {
+}: FaviconImageProps) => {
   const candidates = useMemo(
     () => getFaviconCandidates(url, size, customFavicon, cachedFavicon),
     [url, size, customFavicon, cachedFavicon]
@@ -81,7 +81,6 @@ export function FaviconImage({
       onLoad={handleLoad}
     />
   );
-}
+});
 
-export default React.memo(FaviconImage);
-
+FaviconImage.displayName = 'FaviconImage';

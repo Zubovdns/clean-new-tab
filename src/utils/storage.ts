@@ -72,7 +72,7 @@ export const DEFAULT_SECTIONS: ChromeSection[] = [
 /**
  * Safe chrome.storage.local helper with localStorage fallback
  */
-async function getStorageItem<T>(key: string, defaultValue: T): Promise<T> {
+const getStorageItem = async <T>(key: string, defaultValue: T): Promise<T> => {
   try {
     if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
       const result = await chrome.storage.local.get([key]);
@@ -86,9 +86,9 @@ async function getStorageItem<T>(key: string, defaultValue: T): Promise<T> {
     console.warn(`[storage] Error reading key "${key}":`, error);
   }
   return defaultValue;
-}
+};
 
-export async function setStorageItem<T>(key: string, value: T): Promise<void> {
+export const setStorageItem = async <T>(key: string, value: T): Promise<void> => {
   try {
     if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
       await chrome.storage.local.set({ [key]: value });
@@ -100,7 +100,7 @@ export async function setStorageItem<T>(key: string, value: T): Promise<void> {
   } catch (error) {
     console.warn(`[storage] Error writing key "${key}":`, error);
   }
-}
+};
 
 interface RawStoredItem {
   id?: string;
@@ -117,7 +117,7 @@ interface RawStoredSection {
   items?: RawStoredItem[];
 }
 
-function normalizeSectionItems(items: RawStoredItem[]): ChromeGridItem[] {
+const normalizeSectionItems = (items: RawStoredItem[]): ChromeGridItem[] => {
   const result: ChromeGridItem[] = [];
   for (const item of items) {
     if (item.type === 'folder' && Array.isArray(item.items)) {
@@ -141,12 +141,12 @@ function normalizeSectionItems(items: RawStoredItem[]): ChromeGridItem[] {
     }
   }
   return result;
-}
+};
 
 /**
  * Loads sections from storage with migration fallback from single grid items
  */
-export async function loadSectionsFromStorage(): Promise<ChromeSection[]> {
+export const loadSectionsFromStorage = async (): Promise<ChromeSection[]> => {
   const savedSections = await getStorageItem<RawStoredSection[] | null>(CHROME_NTP_SECTIONS_KEY, null);
   if (savedSections && Array.isArray(savedSections) && savedSections.length > 0) {
     let hadFolders = false;
@@ -181,18 +181,18 @@ export async function loadSectionsFromStorage(): Promise<ChromeSection[]> {
   }
 
   return DEFAULT_SECTIONS;
-}
+};
 
 /**
  * Favicon persistent cache helpers
  */
-export async function getFaviconCache(): Promise<Record<string, string>> {
+export const getFaviconCache = async (): Promise<Record<string, string>> => {
   return getStorageItem<Record<string, string>>(CHROME_NTP_FAVICON_CACHE_KEY, {});
-}
+};
 
 const MAX_FAVICON_CACHE_ENTRIES = 200;
 
-export async function saveMultipleFaviconsToCache(entries: Record<string, string>): Promise<void> {
+export const saveMultipleFaviconsToCache = async (entries: Record<string, string>): Promise<void> => {
   const keys = Object.keys(entries);
   if (keys.length === 0) return;
   const cache = await getFaviconCache();
@@ -217,5 +217,5 @@ export async function saveMultipleFaviconsToCache(entries: Record<string, string
   if (changed) {
     await setStorageItem(CHROME_NTP_FAVICON_CACHE_KEY, cache);
   }
-}
+};
 

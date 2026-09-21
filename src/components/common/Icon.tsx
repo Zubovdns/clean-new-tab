@@ -19,13 +19,13 @@ export type IconName =
   | 'cloud_done'
   | 'cloud_off';
 
-interface IconProps {
+export interface IconProps {
   name: IconName;
   className?: string;
   size?: number;
 }
 
-export function Icon({ name, className = '', size = 20 }: IconProps) {
+export const Icon = React.memo(({ name, className = '', size = 20 }: IconProps) => {
   switch (name) {
     case 'add':
       return (
@@ -329,6 +329,6 @@ export function Icon({ name, className = '', size = 20 }: IconProps) {
     default:
       return null;
   }
-}
+});
 
-export default React.memo(Icon);
+Icon.displayName = 'Icon';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { SyncSettings } from '../../../types';
-import Icon from '../../common/Icon';
+import { Icon } from '../../common/Icon';
 
 export interface SyncConnectedViewProps {
   isDark: boolean;
@@ -11,14 +11,14 @@ export interface SyncConnectedViewProps {
   onDisconnect: () => void;
 }
 
-export function SyncConnectedView({
+export const SyncConnectedView = React.memo(({
   isDark,
   syncSettings,
   isSyncing,
   syncError,
   onSyncNow,
   onDisconnect,
-}: SyncConnectedViewProps) {
+}: SyncConnectedViewProps) => {
   const formatLastSync = (timestamp: number | null) => {
     if (!timestamp) return 'Ещё не выполнялась';
     const date = new Date(timestamp);
@@ -116,6 +116,6 @@ export function SyncConnectedView({
       )}
     </div>
   );
-}
+});
 
-export default React.memo(SyncConnectedView);
+SyncConnectedView.displayName = 'SyncConnectedView';

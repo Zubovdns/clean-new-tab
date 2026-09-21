@@ -17,10 +17,10 @@ export interface UseDeviceFlowParams {
   onTokenReceived: (token: string, clientId: string) => Promise<void>;
 }
 
-export function useDeviceFlow({
+export const useDeviceFlow = ({
   customClientId,
   onTokenReceived,
-}: UseDeviceFlowParams) {
+}: UseDeviceFlowParams) => {
   const [deviceFlow, setDeviceFlow] = useState<DeviceFlowState>({
     step: 'idle',
     userCode: null,
@@ -140,6 +140,6 @@ export function useDeviceFlow({
     startDeviceFlow,
     cancelDeviceFlow,
   };
-}
+};
 
-export default useDeviceFlow;
+

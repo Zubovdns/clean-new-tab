@@ -5,7 +5,7 @@ import { getDomain } from '@utils/favicon';
 /**
  * Hook to manage real-time favicon cache in chrome.storage.local
  */
-export function useFaviconCache() {
+export const useFaviconCache = () => {
   const [faviconCache, setFaviconCache] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -56,6 +56,5 @@ export function useFaviconCache() {
   );
 
   return { getCachedFavicon };
-}
+};
 
-export default useFaviconCache;

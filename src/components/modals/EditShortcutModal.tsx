@@ -10,14 +10,14 @@ export interface EditShortcutModalProps {
   onDelete: (id: string, sectionId: string) => void;
 }
 
-export function EditShortcutModal({
+export const EditShortcutModal = React.memo(({
   data,
   isDark,
   sections,
   onClose,
   onSave,
   onDelete,
-}: EditShortcutModalProps) {
+}: EditShortcutModalProps) => {
   const [formData, setFormData] = useState<EditingShortcutData | null>(null);
 
   useEffect(() => {
@@ -164,6 +164,6 @@ export function EditShortcutModal({
       </div>
     </div>
   );
-}
+});
 
-export default React.memo(EditShortcutModal);
+EditShortcutModal.displayName = 'EditShortcutModal';

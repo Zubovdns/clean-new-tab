@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Icon from '../../common/Icon';
+import { Icon } from '../../common/Icon';
 import { DeviceFlowState } from '../../../hooks/useSync';
 
 export interface SyncDeviceFlowTabProps {
@@ -11,14 +11,14 @@ export interface SyncDeviceFlowTabProps {
   onSwitchToPat: () => void;
 }
 
-export function SyncDeviceFlowTab({
+export const SyncDeviceFlowTab = React.memo(({
   isDark,
   deviceFlow,
   customClientId,
   onStartDeviceFlow,
   onCancelDeviceFlow,
   onSwitchToPat,
-}: SyncDeviceFlowTabProps) {
+}: SyncDeviceFlowTabProps) => {
   const [copiedCode, setCopiedCode] = useState(false);
 
   const handleCopyCode = () => {
@@ -152,6 +152,6 @@ export function SyncDeviceFlowTab({
       )}
     </div>
   );
-}
+});
 
-export default React.memo(SyncDeviceFlowTab);
+SyncDeviceFlowTab.displayName = 'SyncDeviceFlowTab';

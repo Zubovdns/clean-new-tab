@@ -14,13 +14,13 @@ interface UseNewtabDragAndDropParams {
   moveItemToEndOfSection: (sourceSectionId: string, sourceItemIndex: number, targetSectionId: string) => void;
 }
 
-export function useNewtabDragAndDrop({
+export const useNewtabDragAndDrop = ({
   sections,
   reorderSections,
   reorderItemsInSameSection,
   moveItemAcrossSections,
   moveItemToEndOfSection,
-}: UseNewtabDragAndDropParams) {
+}: UseNewtabDragAndDropParams) => {
   const [draggedSectionIndex, setDraggedSectionIndex] = useState<number | null>(null);
   const [dragOverSectionGap, setDragOverSectionGap] = useState<number | null>(null);
   const draggedSectionIndexRef = useRef<number | null>(null);
@@ -244,6 +244,6 @@ export function useNewtabDragAndDrop({
     handleSectionBodyDragOver,
     handleSectionBodyDrop,
   };
-}
+};
 
-export default useNewtabDragAndDrop;
+

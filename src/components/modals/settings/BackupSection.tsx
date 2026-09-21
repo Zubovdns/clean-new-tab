@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChromeSection } from '../../../types';
-import Icon from '../../common/Icon';
+import { Icon } from '../../common/Icon';
 import { exportSectionsToFile, importSectionsFromFile } from '../../../utils/backup';
 
 export interface BackupSectionProps {
@@ -9,11 +9,11 @@ export interface BackupSectionProps {
   onImportSections: (sections: ChromeSection[]) => void;
 }
 
-export function BackupSection({
+export const BackupSection = React.memo(({
   isDark,
   sections,
   onImportSections,
-}: BackupSectionProps) {
+}: BackupSectionProps) => {
   const [importStatus, setImportStatus] = useState<string | null>(null);
 
   const handleImport = async () => {
@@ -68,6 +68,6 @@ export function BackupSection({
       )}
     </div>
   );
-}
+});
 
-export default React.memo(BackupSection);
+BackupSection.displayName = 'BackupSection';
