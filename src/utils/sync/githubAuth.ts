@@ -1,4 +1,4 @@
-import { DeviceCodeResponse } from '../../types';
+import { DeviceCodeResponse } from '@app-types';
 
 // Pre-configured public OAuth Client ID for Clean New Tab (or user can specify their own)
 export const DEFAULT_GITHUB_CLIENT_ID = 'Ov23liTCaImxCmJuli70';

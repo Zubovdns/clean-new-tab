@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ChromeSection, SyncSettings } from '../types';
+import { ChromeSection, SyncSettings } from '@app-types';
 import {
   DEFAULT_SYNC_SETTINGS,
   DEFAULT_GITHUB_CLIENT_ID,
@@ -10,7 +10,7 @@ import {
   pullGistData,
   pushGistData,
 } from '@utils/sync';
-import { useDeviceFlow, DeviceFlowState } from './useDeviceFlow';
+import { useDeviceFlow, DeviceFlowState } from '@hooks/useDeviceFlow';
 
 export type { DeviceFlowState };
 

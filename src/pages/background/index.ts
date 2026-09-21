@@ -1,4 +1,4 @@
-import { saveMultipleFaviconsToCache, getFaviconCache } from '../../utils/storage';
+import { saveMultipleFaviconsToCache, getFaviconCache } from '@utils/storage';
 
 /**
  * Resolves a lightweight favicon URL for a target page:

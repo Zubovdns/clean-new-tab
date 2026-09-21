@@ -1,4 +1,4 @@
-import { ChromeSection, SyncPayload } from '../../types';
+import { ChromeSection, SyncPayload } from '@app-types';
 
 export const GIST_FILENAME = 'clean-new-tab.json';
 

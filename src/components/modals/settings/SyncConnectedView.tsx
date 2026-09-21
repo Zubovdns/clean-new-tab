@@ -1,6 +1,6 @@
 import React from 'react';
-import { SyncSettings } from '../../../types';
-import { Icon } from '../../common/Icon';
+import { SyncSettings } from '@app-types';
+import { Icon } from '@components/common/Icon';
 
 export interface SyncConnectedViewProps {
   isDark: boolean;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { ChromeSection } from '../../../types';
-import { Icon } from '../../common/Icon';
-import { exportSectionsToFile, importSectionsFromFile } from '../../../utils/backup';
+import { ChromeSection } from '@app-types';
+import { Icon } from '@components/common/Icon';
+import { exportSectionsToFile, importSectionsFromFile } from '@utils/backup';
 
 export interface BackupSectionProps {
   isDark: boolean;

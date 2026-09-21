@@ -1,4 +1,4 @@
-import { SyncSettings } from '../../types';
+import { SyncSettings } from '@app-types';
 
 export const CHROME_NTP_SYNC_SETTINGS_KEY = 'chrome_ntp_sync_settings_v1';
 

@@ -1,5 +1,5 @@
-import { ChromeSection } from '../types';
-import { CHROME_NTP_SECTIONS_KEY, setStorageItem } from './storage';
+import { ChromeSection } from '@app-types';
+import { CHROME_NTP_SECTIONS_KEY, setStorageItem } from '@utils/storage';
 
 /**
  * Export sections to a downloadable JSON file

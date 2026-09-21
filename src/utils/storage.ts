@@ -1,4 +1,4 @@
-import { ChromeGridItem, ChromeSection } from '../types';
+import { ChromeGridItem, ChromeSection } from '@app-types';
 
 export const CHROME_NTP_SECTIONS_KEY = 'chrome_ntp_sections_v3';
 const CHROME_NTP_ITEMS_KEY = 'chrome_ntp_grid_items_v2';

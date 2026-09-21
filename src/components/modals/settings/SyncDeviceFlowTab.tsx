@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Icon } from '../../common/Icon';
-import { DeviceFlowState } from '../../../hooks/useSync';
+import { Icon } from '@components/common/Icon';
+import { DeviceFlowState } from '@hooks/useSync';
 
 export interface SyncDeviceFlowTabProps {
   isDark: boolean;

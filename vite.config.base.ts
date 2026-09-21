@@ -35,6 +35,19 @@ export const baseBuildOptions: BuildOptions = {
 }
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src'),
+      '@src': resolve(__dirname, 'src'),
+      '@components': resolve(__dirname, 'src/components'),
+      '@assets': resolve(__dirname, 'src/assets'),
+      '@locales': resolve(__dirname, 'src/locales'),
+      '@pages': resolve(__dirname, 'src/pages'),
+      '@utils': resolve(__dirname, 'src/utils'),
+      '@hooks': resolve(__dirname, 'src/hooks'),
+      '@app-types': resolve(__dirname, 'src/types'),
+    },
+  },
   plugins: [
     tailwindcss(),
     tsconfigPaths(),
