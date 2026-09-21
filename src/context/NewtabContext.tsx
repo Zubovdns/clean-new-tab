@@ -1,10 +1,6 @@
 import React, { createContext, useContext } from 'react';
 
-import {
-  ChromeShortcutItem,
-  ChromeSection,
-  EditingShortcutData,
-} from '@app-types';
+import { ChromeShortcutItem, ChromeSection, EditingShortcutData } from '@app-types';
 
 export interface NewtabContextType {
   isDark: boolean;
@@ -42,14 +38,14 @@ export interface NewtabContextType {
     sectionId: string,
     itemIndex: number,
     item: ChromeShortcutItem,
-    position: 'before' | 'after'
+    position: 'before' | 'after',
   ) => void;
   onItemDrop: (
     e: React.DragEvent,
     sectionId: string,
     itemIndex: number,
     item: ChromeShortcutItem,
-    position: 'before' | 'after'
+    position: 'before' | 'after',
   ) => void;
 }
 

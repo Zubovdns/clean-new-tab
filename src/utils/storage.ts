@@ -43,7 +43,12 @@ export const DEFAULT_SECTIONS: ChromeSection[] = [
       { id: 'sc-gh', type: 'shortcut', title: 'GitHub', url: 'https://github.com' },
       { id: 'sc-so', type: 'shortcut', title: 'StackOverflow', url: 'https://stackoverflow.com' },
       { id: 'sc-ai', type: 'shortcut', title: 'Claude AI', url: 'https://claude.ai' },
-      { id: 'sc-mdn', type: 'shortcut', title: 'MDN Web Docs', url: 'https://developer.mozilla.org' },
+      {
+        id: 'sc-mdn',
+        type: 'shortcut',
+        title: 'MDN Web Docs',
+        url: 'https://developer.mozilla.org',
+      },
       {
         id: 'sc-figma',
         type: 'shortcut',
@@ -152,7 +157,10 @@ const normalizeSectionItems = (items: RawStoredItem[]): ChromeGridItem[] => {
  * Loads sections from storage with migration fallback from single grid items
  */
 export const loadSectionsFromStorage = async (): Promise<ChromeSection[]> => {
-  const savedSections = await getStorageItem<RawStoredSection[] | null>(CHROME_NTP_SECTIONS_KEY, null);
+  const savedSections = await getStorageItem<RawStoredSection[] | null>(
+    CHROME_NTP_SECTIONS_KEY,
+    null,
+  );
   if (savedSections && Array.isArray(savedSections) && savedSections.length > 0) {
     let hadFolders = false;
     const normalized = savedSections.map((sec) => {
@@ -197,7 +205,9 @@ export const getFaviconCache = async (): Promise<Record<string, string>> => {
 
 const MAX_FAVICON_CACHE_ENTRIES = 200;
 
-export const saveMultipleFaviconsToCache = async (entries: Record<string, string>): Promise<void> => {
+export const saveMultipleFaviconsToCache = async (
+  entries: Record<string, string>,
+): Promise<void> => {
   const keys = Object.keys(entries);
   if (keys.length === 0) return;
   const cache = await getFaviconCache();
@@ -223,4 +233,3 @@ export const saveMultipleFaviconsToCache = async (entries: Record<string, string
     await setStorageItem(CHROME_NTP_FAVICON_CACHE_KEY, cache);
   }
 };
-

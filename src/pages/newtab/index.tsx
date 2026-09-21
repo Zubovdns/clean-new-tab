@@ -6,13 +6,13 @@ import '@pages/newtab/index.css';
 import '@assets/styles/tailwind.css';
 
 const init = () => {
-  const rootContainer = document.querySelector("#__root");
+  const rootContainer = document.querySelector('#__root');
   if (!rootContainer) throw new Error("Can't find Newtab root element");
   const root = createRoot(rootContainer);
   root.render(
     <React.StrictMode>
       <Newtab />
-    </React.StrictMode>
+    </React.StrictMode>,
   );
 };
 

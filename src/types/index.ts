@@ -46,4 +46,3 @@ export interface DeviceCodeResponse {
   expires_in: number;
   interval: number;
 }
-

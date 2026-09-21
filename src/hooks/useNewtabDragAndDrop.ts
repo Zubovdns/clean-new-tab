@@ -5,14 +5,22 @@ import { ChromeSection, ChromeShortcutItem } from '@app-types';
 interface UseNewtabDragAndDropParams {
   sections: ChromeSection[];
   reorderSections: (sourceIndex: number, destinationIndex: number) => void;
-  reorderItemsInSameSection: (sectionId: string, sourceIndex: number, destinationIndex: number) => void;
+  reorderItemsInSameSection: (
+    sectionId: string,
+    sourceIndex: number,
+    destinationIndex: number,
+  ) => void;
   moveItemAcrossSections: (
     sourceSectionId: string,
     sourceItemIndex: number,
     targetSectionId: string,
-    targetItemIndex: number
+    targetItemIndex: number,
   ) => void;
-  moveItemToEndOfSection: (sourceSectionId: string, sourceItemIndex: number, targetSectionId: string) => void;
+  moveItemToEndOfSection: (
+    sourceSectionId: string,
+    sourceItemIndex: number,
+    targetSectionId: string,
+  ) => void;
 }
 
 export const useNewtabDragAndDrop = ({
@@ -60,7 +68,7 @@ export const useNewtabDragAndDrop = ({
       const targetGap = isBottom ? sectionIndex + 1 : sectionIndex;
       setDragOverSectionGap((prev) => (prev !== targetGap ? targetGap : prev));
     },
-    []
+    [],
   );
 
   const handleSectionDragEnd = useCallback(() => {
@@ -87,18 +95,21 @@ export const useNewtabDragAndDrop = ({
       }
       handleSectionDragEnd();
     },
-    [reorderSections, handleSectionDragEnd]
+    [reorderSections, handleSectionDragEnd],
   );
 
-  const handleItemDragStart = useCallback((e: React.DragEvent, sectionId: string, itemIndex: number) => {
-    e.stopPropagation();
-    isDraggingRef.current = true;
-    const coords = { sectionId, itemIndex };
-    draggedItemCoordsRef.current = coords;
-    setDraggedItemCoords(coords);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', `item:${sectionId}:${itemIndex}`);
-  }, []);
+  const handleItemDragStart = useCallback(
+    (e: React.DragEvent, sectionId: string, itemIndex: number) => {
+      e.stopPropagation();
+      isDraggingRef.current = true;
+      const coords = { sectionId, itemIndex };
+      draggedItemCoordsRef.current = coords;
+      setDraggedItemCoords(coords);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', `item:${sectionId}:${itemIndex}`);
+    },
+    [],
+  );
 
   const handleItemDragOver = useCallback(
     (
@@ -106,7 +117,7 @@ export const useNewtabDragAndDrop = ({
       sectionId: string,
       itemIndex: number,
       _targetItem: ChromeShortcutItem,
-      position: 'before' | 'after'
+      position: 'before' | 'after',
     ) => {
       if (draggedSectionIndexRef.current !== null) return;
       const source = draggedItemCoordsRef.current;
@@ -130,7 +141,7 @@ export const useNewtabDragAndDrop = ({
         return { sectionId, itemIndex, position };
       });
     },
-    []
+    [],
   );
 
   const handleItemDragEnd = useCallback(() => {
@@ -149,7 +160,7 @@ export const useNewtabDragAndDrop = ({
       targetSectionId: string,
       targetItemIndex: number,
       _targetItem: ChromeShortcutItem,
-      position: 'before' | 'after'
+      position: 'before' | 'after',
     ) => {
       if (draggedSectionIndexRef.current !== null) return;
       const source = draggedItemCoordsRef.current;
@@ -177,20 +188,17 @@ export const useNewtabDragAndDrop = ({
       moveItemAcrossSections(source.sectionId, source.itemIndex, targetSectionId, targetIndex);
       handleItemDragEnd();
     },
-    [reorderItemsInSameSection, moveItemAcrossSections, handleItemDragEnd]
+    [reorderItemsInSameSection, moveItemAcrossSections, handleItemDragEnd],
   );
 
-  const handleSectionBodyDragOver = useCallback(
-    (e: React.DragEvent, sectionId: string) => {
-      if (draggedSectionIndexRef.current !== null) return;
-      if (draggedItemCoordsRef.current === null) return;
+  const handleSectionBodyDragOver = useCallback((e: React.DragEvent, sectionId: string) => {
+    if (draggedSectionIndexRef.current !== null) return;
+    if (draggedItemCoordsRef.current === null) return;
 
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      setDragOverSectionEndId((prev) => (prev !== sectionId ? sectionId : prev));
-    },
-    []
-  );
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverSectionEndId((prev) => (prev !== sectionId ? sectionId : prev));
+  }, []);
 
   const handleSectionBodyDrop = useCallback(
     (e: React.DragEvent, targetSectionId: string) => {
@@ -222,7 +230,7 @@ export const useNewtabDragAndDrop = ({
       moveItemToEndOfSection(source.sectionId, source.itemIndex, targetSectionId);
       handleItemDragEnd();
     },
-    [sections, reorderItemsInSameSection, moveItemToEndOfSection, handleItemDragEnd]
+    [sections, reorderItemsInSameSection, moveItemToEndOfSection, handleItemDragEnd],
   );
 
   return {
@@ -244,5 +252,3 @@ export const useNewtabDragAndDrop = ({
     handleSectionBodyDrop,
   };
 };
-
-

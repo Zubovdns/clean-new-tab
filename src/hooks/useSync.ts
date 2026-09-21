@@ -17,7 +17,7 @@ export type { DeviceFlowState };
 
 export const useSync = (
   sections: ChromeSection[],
-  onRemoteSectionsLoaded: (remoteSections: ChromeSection[]) => void
+  onRemoteSectionsLoaded: (remoteSections: ChromeSection[]) => void,
 ) => {
   const [syncSettings, setSyncSettings] = useState<SyncSettings>(DEFAULT_SYNC_SETTINGS);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -77,7 +77,7 @@ export const useSync = (
         setIsSyncing(false);
       }
     },
-    [onRemoteSectionsLoaded]
+    [onRemoteSectionsLoaded],
   );
 
   const { deviceFlow, startDeviceFlow, cancelDeviceFlow } = useDeviceFlow({
@@ -124,7 +124,7 @@ export const useSync = (
         setIsSyncing(false);
       }
     },
-    [onRemoteSectionsLoaded]
+    [onRemoteSectionsLoaded],
   );
 
   /**
@@ -166,7 +166,7 @@ export const useSync = (
         const pushRes = await pushGistData(
           syncSettings.token,
           syncSettings.gistId,
-          sectionsRef.current
+          sectionsRef.current,
         );
         localLastUpdatedAtRef.current = pushRes.updatedAt;
       }
@@ -206,7 +206,7 @@ export const useSync = (
           const pushRes = await pushGistData(
             syncSettings.token!,
             syncSettings.gistId!,
-            updatedSections
+            updatedSections,
           );
           const newSettings: SyncSettings = {
             ...syncSettings,
@@ -222,13 +222,18 @@ export const useSync = (
         }
       }, 1800);
     },
-    [syncSettings]
+    [syncSettings],
   );
 
   // Initial pull when sync is active on mount
   const hasPulledOnMountRef = useRef(false);
   useEffect(() => {
-    if (syncSettings.enabled && syncSettings.token && syncSettings.gistId && !hasPulledOnMountRef.current) {
+    if (
+      syncSettings.enabled &&
+      syncSettings.token &&
+      syncSettings.gistId &&
+      !hasPulledOnMountRef.current
+    ) {
       hasPulledOnMountRef.current = true;
       syncNow();
     }
@@ -263,5 +268,3 @@ export const useSync = (
     notifySectionsChanged,
   };
 };
-
-

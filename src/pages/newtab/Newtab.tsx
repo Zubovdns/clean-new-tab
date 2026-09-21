@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 import { NewtabProvider, NewtabContextType } from '@/context/NewtabContext';
-import {
-  ChromeShortcutItem,
-  ChromeSection,
-  EditingShortcutData,
-} from '@app-types';
+import { ChromeShortcutItem, ChromeSection, EditingShortcutData } from '@app-types';
 import { Icon } from '@components/common/Icon';
 import { AddItemModal } from '@components/modals/AddItemModal';
 import { AddSectionModal } from '@components/modals/AddSectionModal';
@@ -51,7 +47,7 @@ export const Newtab = () => {
     (remoteSections: ChromeSection[]) => {
       replaceSections(remoteSections);
     },
-    [replaceSections]
+    [replaceSections],
   );
 
   const {
@@ -136,31 +132,37 @@ export const Newtab = () => {
     setEditingSectionId(null);
   }, [editingSectionId, editingSectionTitle, updateSectionTitle]);
 
-  const handleDeleteSection = useCallback((sectionId: string) => {
-    const sec = sections.find((s) => s.id === sectionId);
-    if (!sec) return;
+  const handleDeleteSection = useCallback(
+    (sectionId: string) => {
+      const sec = sections.find((s) => s.id === sectionId);
+      if (!sec) return;
 
-    if (sec.items.length > 0) {
-      const ok = window.confirm(`Удалить секцию "${sec.title}" и все элементы в ней?`);
-      if (!ok) return;
-    }
+      if (sec.items.length > 0) {
+        const ok = window.confirm(`Удалить секцию "${sec.title}" и все элементы в ней?`);
+        if (!ok) return;
+      }
 
-    deleteSection(sectionId);
-    setActiveMenuId(null);
-  }, [sections, deleteSection]);
+      deleteSection(sectionId);
+      setActiveMenuId(null);
+    },
+    [sections, deleteSection],
+  );
 
   const handleOpenAddModal = useCallback((sectionId: string) => {
     setTargetSectionId(sectionId);
     setIsAddModalOpen(true);
   }, []);
 
-  const handleItemClick = useCallback((item: ChromeShortcutItem) => {
-    if (isDraggingRef.current) return;
-    const safeUrl = normalizeSafeUrl(item.url);
-    if (safeUrl) {
-      window.location.href = safeUrl;
-    }
-  }, [isDraggingRef]);
+  const handleItemClick = useCallback(
+    (item: ChromeShortcutItem) => {
+      if (isDraggingRef.current) return;
+      const safeUrl = normalizeSafeUrl(item.url);
+      if (safeUrl) {
+        window.location.href = safeUrl;
+      }
+    },
+    [isDraggingRef],
+  );
 
   const contextValue: NewtabContextType = useMemo(
     () => ({
@@ -222,7 +224,7 @@ export const Newtab = () => {
       handleItemDragEnd,
       handleItemDragOver,
       handleItemDrop,
-    ]
+    ],
   );
 
   if (!isLoaded) {
@@ -250,99 +252,98 @@ export const Newtab = () => {
             />
           ))}
 
-        {/* Add section button */}
-        <div className="flex justify-center pt-2 pb-6">
+          {/* Add section button */}
+          <div className="flex justify-center pt-2 pb-6">
+            <button
+              type="button"
+              onClick={() => setIsAddSectionModalOpen(true)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full border text-xs font-medium cursor-pointer transition-all ${
+                isDark
+                  ? 'border-[#3c4043] bg-[#28292c]/60 hover:bg-[#35363a] text-[#8ab4f8] hover:border-[#8ab4f8]'
+                  : 'border-[#dadce0] bg-white hover:bg-[#f1f3f4] text-[#1a73e8] hover:border-[#1a73e8]'
+              }`}
+            >
+              <Icon name="add_circle" size={18} />
+              <span>Добавить секцию</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Floating Settings & Sync Button */}
+        <div className="fixed top-5 right-6 z-30 flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setIsAddSectionModalOpen(true)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-full border text-xs font-medium cursor-pointer transition-all ${
+            onClick={() => setIsSettingsOpen(true)}
+            className={`group flex items-center gap-2 px-3 py-2 rounded-full border text-xs font-medium cursor-pointer transition-all shadow-xs ${
               isDark
-                ? 'border-[#3c4043] bg-[#28292c]/60 hover:bg-[#35363a] text-[#8ab4f8] hover:border-[#8ab4f8]'
-                : 'border-[#dadce0] bg-white hover:bg-[#f1f3f4] text-[#1a73e8] hover:border-[#1a73e8]'
+                ? 'border-[#3c4043] bg-[#28292c]/80 hover:bg-[#35363a] text-[#e8eaed] hover:border-[#8ab4f8]'
+                : 'border-[#dadce0] bg-white/90 hover:bg-[#f1f3f4] text-[#202124] hover:border-[#1a73e8]'
             }`}
+            title={
+              syncSettings.enabled
+                ? `Синхронизация активна (@${syncSettings.userLogin || 'GitHub'})`
+                : 'Настройки и синхронизация'
+            }
           >
-            <Icon name="add_circle" size={18} />
-            <span>Добавить секцию</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Floating Settings & Sync Button */}
-      <div className="fixed top-5 right-6 z-30 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setIsSettingsOpen(true)}
-          className={`group flex items-center gap-2 px-3 py-2 rounded-full border text-xs font-medium cursor-pointer transition-all shadow-xs ${
-            isDark
-              ? 'border-[#3c4043] bg-[#28292c]/80 hover:bg-[#35363a] text-[#e8eaed] hover:border-[#8ab4f8]'
-              : 'border-[#dadce0] bg-white/90 hover:bg-[#f1f3f4] text-[#202124] hover:border-[#1a73e8]'
-          }`}
-          title={
-            syncSettings.enabled
-              ? `Синхронизация активна (@${syncSettings.userLogin || 'GitHub'})`
-              : 'Настройки и синхронизация'
-          }
-        >
-          <Icon
-            name="settings"
-            size={16}
-            className={`transition-transform duration-300 group-hover:rotate-45 ${
-              isSyncing ? 'animate-spin text-[#8ab4f8]' : ''
-            }`}
-          />
-          {syncSettings.enabled && (
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isSyncing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'
+            <Icon
+              name="settings"
+              size={16}
+              className={`transition-transform duration-300 group-hover:rotate-45 ${
+                isSyncing ? 'animate-spin text-[#8ab4f8]' : ''
               }`}
             />
-          )}
-        </button>
-      </div>
+            {syncSettings.enabled && (
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isSyncing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'
+                }`}
+              />
+            )}
+          </button>
+        </div>
 
-      <AddSectionModal
-        isOpen={isAddSectionModalOpen}
-        isDark={isDark}
-        onClose={() => setIsAddSectionModalOpen(false)}
-        onCreate={createSection}
-      />
+        <AddSectionModal
+          isOpen={isAddSectionModalOpen}
+          isDark={isDark}
+          onClose={() => setIsAddSectionModalOpen(false)}
+          onCreate={createSection}
+        />
 
-      <AddItemModal
-        isOpen={isAddModalOpen}
-        isDark={isDark}
-        sections={sections}
-        targetSectionId={targetSectionId}
-        onClose={() => setIsAddModalOpen(false)}
-        onSaveShortcut={addShortcut}
-      />
+        <AddItemModal
+          isOpen={isAddModalOpen}
+          isDark={isDark}
+          sections={sections}
+          targetSectionId={targetSectionId}
+          onClose={() => setIsAddModalOpen(false)}
+          onSaveShortcut={addShortcut}
+        />
 
-      <EditShortcutModal
-        data={editingShortcut}
-        isDark={isDark}
-        sections={sections}
-        onClose={() => setEditingShortcut(null)}
-        onSave={saveEditShortcut}
-        onDelete={deleteShortcut}
-      />
+        <EditShortcutModal
+          data={editingShortcut}
+          isDark={isDark}
+          sections={sections}
+          onClose={() => setEditingShortcut(null)}
+          onSave={saveEditShortcut}
+          onDelete={deleteShortcut}
+        />
 
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        isDark={isDark}
-        onClose={() => setIsSettingsOpen(false)}
-        sections={sections}
-        onImportSections={replaceSections}
-        syncSettings={syncSettings}
-        isSyncing={isSyncing}
-        syncError={syncError}
-        deviceFlow={deviceFlow}
-        onStartDeviceFlow={startDeviceFlow}
-        onCancelDeviceFlow={cancelDeviceFlow}
-        onConnectWithPAT={connectWithPAT}
-        onDisconnect={disconnect}
-        onSyncNow={syncNow}
-      />
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          isDark={isDark}
+          onClose={() => setIsSettingsOpen(false)}
+          sections={sections}
+          onImportSections={replaceSections}
+          syncSettings={syncSettings}
+          isSyncing={isSyncing}
+          syncError={syncError}
+          deviceFlow={deviceFlow}
+          onStartDeviceFlow={startDeviceFlow}
+          onCancelDeviceFlow={cancelDeviceFlow}
+          onConnectWithPAT={connectWithPAT}
+          onDisconnect={disconnect}
+          onSyncNow={syncNow}
+        />
       </div>
     </NewtabProvider>
   );
 };
-

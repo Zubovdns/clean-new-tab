@@ -7,10 +7,7 @@ export interface SyncPatTabProps {
   onConnectWithPAT: (token: string) => Promise<void>;
 }
 
-export const SyncPatTab = React.memo(({
-  isDark,
-  onConnectWithPAT,
-}: SyncPatTabProps) => {
+export const SyncPatTab = React.memo(({ isDark, onConnectWithPAT }: SyncPatTabProps) => {
   const [patInput, setPatInput] = useState('');
   const [isPatSubmitting, setIsPatSubmitting] = useState(false);
   const [patError, setPatError] = useState<string | null>(null);
@@ -62,9 +59,7 @@ export const SyncPatTab = React.memo(({
         </a>
       </div>
 
-      {patError && (
-        <p className="text-xs text-red-400">{patError}</p>
-      )}
+      {patError && <p className="text-xs text-red-400">{patError}</p>}
 
       <button
         type="submit"

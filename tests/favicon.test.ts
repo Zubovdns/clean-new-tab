@@ -40,7 +40,7 @@ describe('favicon utils', () => {
       const candidates = getFaviconCandidates(
         'https://example.com',
         32,
-        'https://custom.icon/fav.png'
+        'https://custom.icon/fav.png',
       );
       expect(candidates[0]).toBe('https://custom.icon/fav.png');
     });
@@ -50,7 +50,7 @@ describe('favicon utils', () => {
         'https://example.com',
         32,
         undefined,
-        'https://example.com/cached.ico'
+        'https://example.com/cached.ico',
       );
       expect(candidates).toContain('https://example.com/cached.ico');
     });
@@ -98,7 +98,7 @@ describe('favicon utils', () => {
       const candidates = getFaviconCandidates(
         'https://example.com',
         32,
-        'https://example.com/favicon.ico'
+        'https://example.com/favicon.ico',
       );
       const count = candidates.filter((c) => c === 'https://example.com/favicon.ico').length;
       expect(count).toBe(1);
