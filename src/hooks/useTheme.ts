@@ -33,4 +33,3 @@ export const useTheme = (): boolean => {
 
   return isDark;
 };
-

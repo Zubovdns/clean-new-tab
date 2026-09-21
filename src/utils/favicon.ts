@@ -4,9 +4,8 @@
 
 export const getDomain = (rawUrl: string): string => {
   try {
-    const url = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
-      ? rawUrl
-      : `https://${rawUrl}`;
+    const url =
+      rawUrl.startsWith('http://') || rawUrl.startsWith('https://') ? rawUrl : `https://${rawUrl}`;
     return new URL(url).hostname;
   } catch {
     return rawUrl;
@@ -17,11 +16,10 @@ export const getFaviconCandidates = (
   rawUrl: string,
   size = 32,
   customFavicon?: string,
-  cachedFavicon?: string
+  cachedFavicon?: string,
 ): string[] => {
-  const targetUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
-    ? rawUrl
-    : `https://${rawUrl}`;
+  const targetUrl =
+    rawUrl.startsWith('http://') || rawUrl.startsWith('https://') ? rawUrl : `https://${rawUrl}`;
 
   const candidates: string[] = [];
   const domain = getDomain(targetUrl);
@@ -68,7 +66,7 @@ export const getFaviconCandidates = (
   // Skipped for private/local domains where Google cannot resolve
   if (!isLocalOrPrivate) {
     addCandidate(
-      `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(targetUrl)}&size=${size}`
+      `https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(targetUrl)}&size=${size}`,
     );
   }
 
@@ -94,4 +92,3 @@ export const getFaviconCandidates = (
 
   return candidates;
 };
-

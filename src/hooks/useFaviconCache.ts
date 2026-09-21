@@ -14,7 +14,7 @@ export const useFaviconCache = () => {
 
     const handleStorageChange = (
       changes: { [key: string]: chrome.storage.StorageChange },
-      areaName: string
+      areaName: string,
     ) => {
       if (areaName === 'local' && changes[CHROME_NTP_FAVICON_CACHE_KEY]?.newValue) {
         setFaviconCache(changes[CHROME_NTP_FAVICON_CACHE_KEY].newValue);
@@ -53,9 +53,8 @@ export const useFaviconCache = () => {
         ''
       );
     },
-    [faviconCache]
+    [faviconCache],
   );
 
   return { getCachedFavicon };
 };
-

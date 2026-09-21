@@ -1,10 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 
-import {
-  DEFAULT_GITHUB_CLIENT_ID,
-  requestDeviceCode,
-  pollDeviceToken,
-} from '@utils/sync';
+import { DEFAULT_GITHUB_CLIENT_ID, requestDeviceCode, pollDeviceToken } from '@utils/sync';
 
 export interface DeviceFlowState {
   step: 'idle' | 'requesting' | 'code_ready' | 'success' | 'error';
@@ -18,10 +14,7 @@ export interface UseDeviceFlowParams {
   onTokenReceived: (token: string, clientId: string) => Promise<void>;
 }
 
-export const useDeviceFlow = ({
-  customClientId,
-  onTokenReceived,
-}: UseDeviceFlowParams) => {
+export const useDeviceFlow = ({ customClientId, onTokenReceived }: UseDeviceFlowParams) => {
   const [deviceFlow, setDeviceFlow] = useState<DeviceFlowState>({
     step: 'idle',
     userCode: null,
@@ -145,7 +138,7 @@ export const useDeviceFlow = ({
         });
       }
     },
-    [cancelDeviceFlow, customClientId, onTokenReceived]
+    [cancelDeviceFlow, customClientId, onTokenReceived],
   );
 
   return {
@@ -154,5 +147,3 @@ export const useDeviceFlow = ({
     cancelDeviceFlow,
   };
 };
-
-

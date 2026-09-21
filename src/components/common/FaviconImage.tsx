@@ -14,74 +14,76 @@ export interface FaviconImageProps {
   cachedFavicon?: string;
 }
 
-export const FaviconImage = React.memo(({
-  url,
-  title,
-  size = 32,
-  className = 'w-6 h-6 object-contain pointer-events-none',
-  isDark = true,
-  letterClassName = '',
-  hideOnFallback = false,
-  customFavicon,
-  cachedFavicon,
-}: FaviconImageProps) => {
-  const candidates = useMemo(
-    () => getFaviconCandidates(url, size, customFavicon, cachedFavicon),
-    [url, size, customFavicon, cachedFavicon]
-  );
-  const [candidateIndex, setCandidateIndex] = useState(0);
-
-  useEffect(() => {
-    setCandidateIndex(0);
-  }, [url, customFavicon, cachedFavicon]);
-
-  const nextCandidate = () => {
-    setCandidateIndex((prev) => prev + 1);
-  };
-
-  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    const currentSrc = candidates[candidateIndex] || '';
-    // If it came from Google S2 and is a 16x16 or smaller image (Google's default pixelated globe), reject it if we have more candidates
-    if (
-      (currentSrc.includes('google.com/s2') || currentSrc.includes('gstatic.com')) &&
-      img.naturalWidth <= 16 &&
-      img.naturalHeight <= 16 &&
-      candidateIndex < candidates.length - 1
-    ) {
-      nextCandidate();
-    }
-  };
-
-  if (candidateIndex >= candidates.length) {
-    if (hideOnFallback) {
-      return null;
-    }
-    const firstLetter = (title || 'G').trim().charAt(0).toUpperCase();
-    return (
-      <span
-        className={`font-medium pointer-events-none select-none ${
-          letterClassName ||
-          (isDark ? 'text-[#8ab4f8] text-[18px]' : 'text-[#1a73e8] text-[18px]')
-        }`}
-      >
-        {firstLetter}
-      </span>
+export const FaviconImage = React.memo(
+  ({
+    url,
+    title,
+    size = 32,
+    className = 'w-6 h-6 object-contain pointer-events-none',
+    isDark = true,
+    letterClassName = '',
+    hideOnFallback = false,
+    customFavicon,
+    cachedFavicon,
+  }: FaviconImageProps) => {
+    const candidates = useMemo(
+      () => getFaviconCandidates(url, size, customFavicon, cachedFavicon),
+      [url, size, customFavicon, cachedFavicon],
     );
-  }
+    const [candidateIndex, setCandidateIndex] = useState(0);
 
-  return (
-    <img
-      src={candidates[candidateIndex]}
-      alt={title}
-      draggable={false}
-      loading="lazy"
-      decoding="async"
-      className={className}
-      onError={nextCandidate}
-      onLoad={handleLoad}
-    />
-  );
-});
+    useEffect(() => {
+      setCandidateIndex(0);
+    }, [url, customFavicon, cachedFavicon]);
+
+    const nextCandidate = () => {
+      setCandidateIndex((prev) => prev + 1);
+    };
+
+    const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+      const img = e.currentTarget;
+      const currentSrc = candidates[candidateIndex] || '';
+      // If it came from Google S2 and is a 16x16 or smaller image (Google's default pixelated globe), reject it if we have more candidates
+      if (
+        (currentSrc.includes('google.com/s2') || currentSrc.includes('gstatic.com')) &&
+        img.naturalWidth <= 16 &&
+        img.naturalHeight <= 16 &&
+        candidateIndex < candidates.length - 1
+      ) {
+        nextCandidate();
+      }
+    };
+
+    if (candidateIndex >= candidates.length) {
+      if (hideOnFallback) {
+        return null;
+      }
+      const firstLetter = (title || 'G').trim().charAt(0).toUpperCase();
+      return (
+        <span
+          className={`font-medium pointer-events-none select-none ${
+            letterClassName ||
+            (isDark ? 'text-[#8ab4f8] text-[18px]' : 'text-[#1a73e8] text-[18px]')
+          }`}
+        >
+          {firstLetter}
+        </span>
+      );
+    }
+
+    return (
+      <img
+        src={candidates[candidateIndex]}
+        alt={title}
+        draggable={false}
+        loading="lazy"
+        decoding="async"
+        className={className}
+        onError={nextCandidate}
+        onLoad={handleLoad}
+      />
+    );
+  },
+);
 
 FaviconImage.displayName = 'FaviconImage';

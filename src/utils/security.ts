@@ -78,8 +78,7 @@ export const validateAndNormalizeSections = (rawSections: unknown): ChromeSectio
     if (!rawSec || typeof rawSec !== 'object') continue;
     const sec = rawSec as Record<string, unknown>;
 
-    const id =
-      typeof sec.id === 'string' && sec.id.trim() ? sec.id.trim() : generateId('sec');
+    const id = typeof sec.id === 'string' && sec.id.trim() ? sec.id.trim() : generateId('sec');
     const title =
       typeof sec.title === 'string' && sec.title.trim() ? sec.title.trim() : 'Новая секция';
 
@@ -102,7 +101,8 @@ export const validateAndNormalizeSections = (rawSections: unknown): ChromeSectio
             ? it.title.trim()
             : safeUrl.replace(/^https?:\/\//i, ''),
         url: safeUrl,
-        favicon: typeof it.favicon === 'string' && it.favicon.trim() ? it.favicon.trim() : undefined,
+        favicon:
+          typeof it.favicon === 'string' && it.favicon.trim() ? it.favicon.trim() : undefined,
       });
     }
 
