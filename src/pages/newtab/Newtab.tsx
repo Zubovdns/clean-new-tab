@@ -7,15 +7,26 @@ import {
 import useTheme from '@hooks/useTheme';
 import useFaviconCache from '@hooks/useFaviconCache';
 import useSections from '@hooks/useSections';
+import useSync from '@hooks/useSync';
 import SectionCard from '@components/section/SectionCard';
 import AddSectionModal from '@components/modals/AddSectionModal';
 import AddItemModal from '@components/modals/AddItemModal';
 import EditShortcutModal from '@components/modals/EditShortcutModal';
+import SettingsModal from '@components/modals/SettingsModal';
 import Icon from '@components/common/Icon';
 
 export default function Newtab() {
   const isDark = useTheme();
   const { getCachedFavicon } = useFaviconCache();
+
+  const syncNotifyRef = useRef<((s: ChromeSection[]) => void) | null>(null);
+
+  const handleSectionsChangedLocally = useCallback((updated: ChromeSection[]) => {
+    if (syncNotifyRef.current) {
+      syncNotifyRef.current(updated);
+    }
+  }, []);
+
   const {
     sections,
     isLoaded,
@@ -29,8 +40,32 @@ export default function Newtab() {
     reorderItemsInSameSection,
     moveItemAcrossSections,
     moveItemToEndOfSection,
-  } = useSections();
+    replaceSections,
+  } = useSections(handleSectionsChangedLocally);
 
+  const handleRemoteSectionsLoaded = useCallback(
+    (remoteSections: ChromeSection[]) => {
+      replaceSections(remoteSections);
+    },
+    [replaceSections]
+  );
+
+  const {
+    syncSettings,
+    isSyncing,
+    syncError,
+    deviceFlow,
+    startDeviceFlow,
+    cancelDeviceFlow,
+    connectWithPAT,
+    disconnect,
+    syncNow,
+    notifySectionsChanged,
+  } = useSync(sections, handleRemoteSectionsLoaded);
+
+  syncNotifyRef.current = notifySectionsChanged;
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [targetSectionId, setTargetSectionId] = useState<string>('');
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
@@ -72,6 +107,7 @@ export default function Newtab() {
         setEditingShortcut(null);
         setActiveMenuId(null);
         setEditingSectionId(null);
+        setIsSettingsOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -379,6 +415,39 @@ export default function Newtab() {
         </div>
       </div>
 
+      {/* Floating Settings & Sync Button */}
+      <div className="fixed top-5 right-6 z-30 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setIsSettingsOpen(true)}
+          className={`group flex items-center gap-2 px-3 py-2 rounded-full border text-xs font-medium cursor-pointer transition-all shadow-xs ${
+            isDark
+              ? 'border-[#3c4043] bg-[#28292c]/80 hover:bg-[#35363a] text-[#e8eaed] hover:border-[#8ab4f8]'
+              : 'border-[#dadce0] bg-white/90 hover:bg-[#f1f3f4] text-[#202124] hover:border-[#1a73e8]'
+          }`}
+          title={
+            syncSettings.enabled
+              ? `Синхронизация активна (@${syncSettings.userLogin || 'GitHub'})`
+              : 'Настройки и синхронизация'
+          }
+        >
+          <Icon
+            name="settings"
+            size={16}
+            className={`transition-transform duration-300 group-hover:rotate-45 ${
+              isSyncing ? 'animate-spin text-[#8ab4f8]' : ''
+            }`}
+          />
+          {syncSettings.enabled && (
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isSyncing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'
+              }`}
+            />
+          )}
+        </button>
+      </div>
+
       <AddSectionModal
         isOpen={isAddSectionModalOpen}
         isDark={isDark}
@@ -402,6 +471,23 @@ export default function Newtab() {
         onClose={() => setEditingShortcut(null)}
         onSave={saveEditShortcut}
         onDelete={deleteShortcut}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        isDark={isDark}
+        onClose={() => setIsSettingsOpen(false)}
+        sections={sections}
+        onImportSections={replaceSections}
+        syncSettings={syncSettings}
+        isSyncing={isSyncing}
+        syncError={syncError}
+        deviceFlow={deviceFlow}
+        onStartDeviceFlow={startDeviceFlow}
+        onCancelDeviceFlow={cancelDeviceFlow}
+        onConnectWithPAT={connectWithPAT}
+        onDisconnect={disconnect}
+        onSyncNow={syncNow}
       />
     </div>
   );

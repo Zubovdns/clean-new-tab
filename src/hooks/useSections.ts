@@ -12,10 +12,12 @@ import {
 } from '@utils/storage';
 import { getDomain } from '@utils/favicon';
 
-export function useSections() {
+export function useSections(onSectionsChangedLocally?: (updated: ChromeSection[]) => void) {
   const [sections, setSections] = useState<ChromeSection[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const hasRequestedFaviconsRef = useRef(false);
+  const onSectionsChangedRef = useRef(onSectionsChangedLocally);
+  onSectionsChangedRef.current = onSectionsChangedLocally;
 
   // Load saved sections on mount
   useEffect(() => {
@@ -49,6 +51,14 @@ export function useSections() {
   }, [isLoaded, sections]);
 
   const saveSections = useCallback((updated: ChromeSection[]) => {
+    setSections(updated);
+    setStorageItem(CHROME_NTP_SECTIONS_KEY, updated);
+    if (onSectionsChangedRef.current) {
+      onSectionsChangedRef.current(updated);
+    }
+  }, []);
+
+  const replaceSections = useCallback((updated: ChromeSection[]) => {
     setSections(updated);
     setStorageItem(CHROME_NTP_SECTIONS_KEY, updated);
   }, []);
@@ -258,6 +268,7 @@ export function useSections() {
     reorderItemsInSameSection,
     moveItemAcrossSections,
     moveItemToEndOfSection,
+    replaceSections,
   };
 }
 
