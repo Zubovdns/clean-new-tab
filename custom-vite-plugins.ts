@@ -15,8 +15,12 @@ export const stripDevIcons = (isDev: boolean): PluginOption => {
     },
     closeBundle() {
       if (!outDir) return;
+      const icon16 = resolve(outDir, 'dev-icon-16.png');
       const icon32 = resolve(outDir, 'dev-icon-32.png');
       const icon128 = resolve(outDir, 'dev-icon-128.png');
+      if (fs.existsSync(icon16)) {
+        fs.rmSync(icon16, { force: true });
+      }
       if (fs.existsSync(icon32)) {
         fs.rmSync(icon32, { force: true });
       }
