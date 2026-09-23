@@ -1,43 +1,52 @@
 {
   "name": "clean-new-tab",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Custom New Tab override extension for Brave and Chromium browsers built with Vite, React, TypeScript, and Tailwind CSS.",
   "scripts": {
-    "dev": "vite --config vite.config.chrome.ts",
+    "dev": "vite build --watch --config vite.config.chrome.ts --mode development",
+    "dev:chrome": "vite build --watch --config vite.config.chrome.ts --mode development",
+    "dev:firefox": "vite build --watch --config vite.config.firefox.ts --mode development",
     "dev:watch": "nodemon --config nodemon.chrome.json",
     "build": "vite build --config vite.config.chrome.ts",
     "build:chrome": "vite build --config vite.config.chrome.ts",
     "build:firefox": "vite build --config vite.config.firefox.ts",
     "type-check": "tsc --noEmit",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "type": "module",
   "dependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.3",
     "@tailwindcss/vite": "^4.1.11",
     "@types/chrome": "^0.1.11",
     "@types/node": "^24.9.1",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@typescript-eslint/eslint-plugin": "^7.8.0",
-    "@typescript-eslint/parser": "^7.18.0",
-    "@vitejs/plugin-react": "^4.7.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.70.0",
+    "@typescript-eslint/parser": "^8.70.0",
+    "@vitejs/plugin-react": "^5.2.0",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "fs-extra": "^11.3.2",
     "nodemon": "^3.1.10",
-    "tailwindcss": "^4.1.16",
+    "prettier": "^3.9.8",
+    "tailwindcss": "^4.3.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^5.0.1"
   }
 }

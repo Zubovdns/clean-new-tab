@@ -1,28 +1,21 @@
 {
   "icons": {
-    "16": "public/dev-icon-32.png",
+    "16": "public/dev-icon-16.png",
     "32": "public/dev-icon-32.png",
     "128": "public/dev-icon-128.png"
   },
-  "permissions": [
-    "storage",
-    "favicon",
-    "tabs"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
+  "permissions": ["storage", "favicon"],
+  "host_permissions": ["https://api.github.com/*", "https://github.com/*"],
   "web_accessible_resources": [
     {
       "resources": [
         "_favicon/*",
         "favicon.svg",
         "dev-icon-128.png",
-        "dev-icon-32.png"
+        "dev-icon-32.png",
+        "dev-icon-16.png"
       ],
-      "matches": [
-        "<all_urls>"
-      ]
+      "matches": ["<all_urls>"]
     }
   ]
 }
