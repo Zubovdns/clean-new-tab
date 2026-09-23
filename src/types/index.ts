@@ -32,6 +32,8 @@ export interface SyncSettings {
   enabled: boolean;
   authType: 'device_flow' | 'pat';
   token: string | null;
+  refreshToken?: string | null;
+  tokenExpiresAt?: number | null;
   gistId: string | null;
   userLogin: string | null;
   userAvatarUrl: string | null;

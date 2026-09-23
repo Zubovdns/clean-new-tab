@@ -78,6 +78,7 @@ npm run build          # Default build (Chrome)
 ## 5. Git & Workflow Guidelines
 
 - **Branches:** Never commit directly to `develop` or `main`. Always create or use a dedicated branch (e.g., `feature/...`, `fix/...`, `chore/...`).
+- **No Automatic Commits:** Do NOT commit (`git commit`) automatically without explicit permission from the user. Keep changes in working tree / staged files and wait for user approval before making a commit.
 - **Commit Messages:** Follow [Conventional Commits](https://www.conventionalcommits.org/):
   - `feat:` new user-facing functionality
   - `fix:` bug fixes

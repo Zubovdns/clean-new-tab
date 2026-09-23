@@ -6,6 +6,8 @@ export const DEFAULT_SYNC_SETTINGS: SyncSettings = {
   enabled: false,
   authType: 'device_flow',
   token: null,
+  refreshToken: null,
+  tokenExpiresAt: null,
   gistId: null,
   userLogin: null,
   userAvatarUrl: null,

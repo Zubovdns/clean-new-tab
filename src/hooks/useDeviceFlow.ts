@@ -9,9 +9,16 @@ export interface DeviceFlowState {
   errorMsg: string | null;
 }
 
+export interface DeviceFlowTokenData {
+  accessToken: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  refreshTokenExpiresIn?: number;
+}
+
 export interface UseDeviceFlowParams {
   customClientId?: string;
-  onTokenReceived: (token: string, clientId: string) => Promise<void>;
+  onTokenReceived: (tokenData: DeviceFlowTokenData, clientId: string) => Promise<void>;
 }
 
 export const useDeviceFlow = ({ customClientId, onTokenReceived }: UseDeviceFlowParams) => {
@@ -95,7 +102,15 @@ export const useDeviceFlow = ({ customClientId, onTokenReceived }: UseDeviceFlow
             if (isCancelledRef.current) return;
 
             if (tokenRes.access_token) {
-              await onTokenReceived(tokenRes.access_token, targetClientId);
+              await onTokenReceived(
+                {
+                  accessToken: tokenRes.access_token,
+                  refreshToken: tokenRes.refresh_token,
+                  expiresIn: tokenRes.expires_in,
+                  refreshTokenExpiresIn: tokenRes.refresh_token_expires_in,
+                },
+                targetClientId,
+              );
               if (isCancelledRef.current) return;
               setDeviceFlow({
                 step: 'success',

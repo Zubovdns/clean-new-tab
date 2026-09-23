@@ -53,9 +53,19 @@ export const SyncConnectedView = React.memo(
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-sm font-medium">@{syncSettings.userLogin}</span>
-                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                <span
+                  className={`inline-block w-2 h-2 rounded-full ${
+                    syncError
+                      ? 'bg-red-500'
+                      : isSyncing
+                        ? 'bg-amber-400 animate-pulse'
+                        : 'bg-emerald-500'
+                  }`}
+                />
               </div>
-              <p className="text-xs text-[#9aa0a6]">Синхронизация активна</p>
+              <p className={`text-xs ${syncError ? 'text-red-400 font-medium' : 'text-[#9aa0a6]'}`}>
+                {syncError ? 'Ошибка синхронизации' : 'Синхронизация активна'}
+              </p>
             </div>
           </div>
 
@@ -113,7 +123,23 @@ export const SyncConnectedView = React.memo(
           </button>
         </div>
 
-        {syncError && <p className="text-xs text-red-400 mt-1">{syncError}</p>}
+        {syncError && (
+          <div className="flex items-start gap-2.5 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-400 mt-1">
+            <Icon name="cloud_off" size={16} className="shrink-0 mt-0.5 text-red-400" />
+            <div className="flex flex-col gap-1">
+              <span className="font-medium">{syncError}</span>
+              {(syncError.includes('401') ||
+                syncError.includes('истёк') ||
+                syncError.includes('недействителен') ||
+                syncError.includes('устарел')) && (
+                <span className="text-[11px] text-[#9aa0a6]">
+                  Нажмите кнопку «Отключить» выше и авторизуйтесь заново через GitHub. Ваши закладки
+                  в Gist не пропадут.
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   },

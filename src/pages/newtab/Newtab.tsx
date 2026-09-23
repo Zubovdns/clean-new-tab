@@ -280,9 +280,13 @@ export const Newtab = () => {
                 : 'border-[#dadce0] bg-white/90 hover:bg-[#f1f3f4] text-[#202124] hover:border-[#1a73e8]'
             }`}
             title={
-              syncSettings.enabled
-                ? `Синхронизация активна (@${syncSettings.userLogin || 'GitHub'})`
-                : 'Настройки и синхронизация'
+              syncError
+                ? `Ошибка синхронизации: ${syncError}`
+                : isSyncing
+                  ? 'Выполняется синхронизация...'
+                  : syncSettings.enabled
+                    ? `Синхронизация активна (@${syncSettings.userLogin || 'GitHub'})`
+                    : 'Настройки и синхронизация'
             }
           >
             <Icon
@@ -292,10 +296,14 @@ export const Newtab = () => {
                 isSyncing ? 'animate-spin text-[#8ab4f8]' : ''
               }`}
             />
-            {syncSettings.enabled && (
+            {(syncSettings.enabled || syncError) && (
               <span
-                className={`w-2 h-2 rounded-full ${
-                  isSyncing ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  syncError
+                    ? 'bg-red-500'
+                    : isSyncing
+                      ? 'bg-amber-400 animate-pulse'
+                      : 'bg-emerald-500'
                 }`}
               />
             )}
