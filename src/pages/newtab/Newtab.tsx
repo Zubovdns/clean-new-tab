@@ -275,13 +275,9 @@ export const Newtab = () => {
             type="button"
             onClick={() => setIsSettingsOpen(true)}
             className={`group flex items-center gap-2 px-3 py-2 rounded-full border text-xs font-medium cursor-pointer transition-all shadow-xs ${
-              syncError
-                ? isDark
-                  ? '!border-red-500/60 bg-red-950/30 text-red-200 hover:!border-red-400'
-                  : '!border-red-400 bg-red-50 text-red-700 hover:!border-red-500'
-                : isDark
-                  ? 'border-[#3c4043] bg-[#28292c]/80 hover:bg-[#35363a] text-[#e8eaed] hover:border-[#8ab4f8]'
-                  : 'border-[#dadce0] bg-white/90 hover:bg-[#f1f3f4] text-[#202124] hover:border-[#1a73e8]'
+              isDark
+                ? 'border-[#3c4043] bg-[#28292c]/80 hover:bg-[#35363a] text-[#e8eaed] hover:border-[#8ab4f8]'
+                : 'border-[#dadce0] bg-white/90 hover:bg-[#f1f3f4] text-[#202124] hover:border-[#1a73e8]'
             }`}
             title={
               syncError
@@ -297,14 +293,14 @@ export const Newtab = () => {
               name="settings"
               size={16}
               className={`transition-transform duration-300 group-hover:rotate-45 ${
-                isSyncing ? 'animate-spin text-[#8ab4f8]' : syncError ? 'text-red-400' : ''
+                isSyncing ? 'animate-spin text-[#8ab4f8]' : ''
               }`}
             />
             {(syncSettings.enabled || syncError) && (
               <span
                 className={`w-2 h-2 rounded-full transition-colors ${
                   syncError
-                    ? 'bg-red-500 animate-pulse ring-2 ring-red-400/50'
+                    ? 'bg-red-500'
                     : isSyncing
                       ? 'bg-amber-400 animate-pulse'
                       : 'bg-emerald-500'

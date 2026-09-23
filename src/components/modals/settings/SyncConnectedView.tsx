@@ -56,7 +56,7 @@ export const SyncConnectedView = React.memo(
                 <span
                   className={`inline-block w-2 h-2 rounded-full ${
                     syncError
-                      ? 'bg-red-500 animate-pulse ring-2 ring-red-400/50'
+                      ? 'bg-red-500'
                       : isSyncing
                         ? 'bg-amber-400 animate-pulse'
                         : 'bg-emerald-500'
