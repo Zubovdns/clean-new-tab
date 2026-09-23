@@ -5,8 +5,19 @@ export const DEFAULT_GITHUB_CLIENT_ID = 'Ov23liTCaImxCmJuli70';
 
 export interface PollTokenResult {
   access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  refresh_token_expires_in?: number;
   error?: 'authorization_pending' | 'slow_down' | 'expired_token' | 'access_denied' | string;
+  error_description?: string;
   interval?: number;
+}
+
+export interface RefreshTokenResult {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  refresh_token_expires_in?: number;
 }
 
 /**
@@ -75,6 +86,44 @@ export const pollDeviceToken = async (
 };
 
 /**
+ * 3. Refresh OAuth access token using refresh_token (GitHub OAuth Device Flow)
+ */
+export const refreshDeviceToken = async (
+  clientId: string,
+  refreshToken: string,
+): Promise<RefreshTokenResult> => {
+  const targetClientId = clientId.trim() || DEFAULT_GITHUB_CLIENT_ID;
+  const res = await fetch('https://github.com/login/oauth/access_token', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      client_id: targetClientId,
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Не удалось обновить токен (${res.status}): ${errorText}`);
+  }
+
+  const data = await res.json();
+  if (data.error) {
+    throw new Error(`Ошибка обновления токена: ${data.error_description || data.error}`);
+  }
+
+  if (!data.access_token) {
+    throw new Error('Ответ не содержит access_token');
+  }
+
+  return data as RefreshTokenResult;
+};
+
+/**
  * Fetch authenticated GitHub user profile
  */
 export const fetchUserProfile = async (
@@ -88,6 +137,9 @@ export const fetchUserProfile = async (
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error('Токен GitHub недействителен (401 Bad credentials)');
+    }
     throw new Error(`Неверный токен или ошибка профиля (${res.status})`);
   }
 

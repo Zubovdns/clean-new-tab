@@ -3,6 +3,16 @@ import { validateAndNormalizeSections } from '@utils/security';
 
 export const GIST_FILENAME = 'clean-new-tab.json';
 
+export class GistHttpError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'GistHttpError';
+    this.status = status;
+  }
+}
+
 /**
  * Pull sections data from Gist
  */
@@ -15,7 +25,10 @@ export const pullGistData = async (token: string, gistId: string): Promise<SyncP
   });
 
   if (!res.ok) {
-    throw new Error(`Не удалось загрузить данные из Gist (${res.status})`);
+    if (res.status === 401) {
+      throw new GistHttpError('Токен GitHub недействителен (401 Bad credentials)', 401);
+    }
+    throw new GistHttpError(`Не удалось загрузить данные из Gist (${res.status})`, res.status);
   }
 
   const gist = await res.json();
@@ -72,7 +85,10 @@ export const pushGistData = async (
 
   if (!res.ok) {
     const errorText = await res.text();
-    throw new Error(`Не удалось обновить Gist (${res.status}): ${errorText}`);
+    if (res.status === 401) {
+      throw new GistHttpError('Токен GitHub недействителен (401 Bad credentials)', 401);
+    }
+    throw new GistHttpError(`Не удалось обновить Gist (${res.status}): ${errorText}`, res.status);
   }
 
   return { updatedAt: now };
@@ -99,7 +115,10 @@ export const findOrCreateGist = async (
   });
 
   if (!listRes.ok) {
-    throw new Error(`Ошибка при запросе списка Gist (${listRes.status})`);
+    if (listRes.status === 401) {
+      throw new GistHttpError('Токен GitHub недействителен (401 Bad credentials)', 401);
+    }
+    throw new GistHttpError(`Ошибка при запросе списка Gist (${listRes.status})`, listRes.status);
   }
 
   const gists = (await listRes.json()) as Array<{
@@ -149,7 +168,13 @@ export const findOrCreateGist = async (
 
   if (!createRes.ok) {
     const errorText = await createRes.text();
-    throw new Error(`Ошибка при создании Gist (${createRes.status}): ${errorText}`);
+    if (createRes.status === 401) {
+      throw new GistHttpError('Токен GitHub недействителен (401 Bad credentials)', 401);
+    }
+    throw new GistHttpError(
+      `Ошибка при создании Gist (${createRes.status}): ${errorText}`,
+      createRes.status,
+    );
   }
 
   const created = await createRes.json();
