@@ -4,26 +4,36 @@ export interface AddSectionModalProps {
   isOpen: boolean;
   isDark: boolean;
   onClose: () => void;
-  onCreate: (title: string) => void;
+  onCreate: (title: string) => void | Promise<void>;
 }
 
 export const AddSectionModal = React.memo(
   ({ isOpen, isDark, onClose, onCreate }: AddSectionModalProps) => {
     const [title, setTitle] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
       if (isOpen) {
         setTitle('');
+        setIsSubmitting(false);
       }
     }, [isOpen]);
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!title.trim()) return;
-      onCreate(title);
-      onClose();
+      if (!title.trim() || isSubmitting) return;
+
+      setIsSubmitting(true);
+      try {
+        await onCreate(title);
+        onClose();
+      } catch (err) {
+        console.error('[AddSectionModal] Error creating section:', err);
+      } finally {
+        setIsSubmitting(false);
+      }
     };
 
     return (
@@ -65,21 +75,29 @@ export const AddSectionModal = React.memo(
               <button
                 type="button"
                 onClick={onClose}
-                className={`px-4 py-2 text-xs font-medium rounded-full transition-colors cursor-pointer ${
-                  isDark ? 'hover:bg-[#3c4043] text-[#8ab4f8]' : 'hover:bg-[#f1f3f4] text-[#1a73e8]'
+                disabled={isSubmitting}
+                className={`px-4 py-2 text-xs font-medium rounded-full transition-colors ${
+                  isSubmitting
+                    ? 'opacity-50 cursor-not-allowed text-[#9aa0a6]'
+                    : isDark
+                      ? 'hover:bg-[#3c4043] text-[#8ab4f8] cursor-pointer'
+                      : 'hover:bg-[#f1f3f4] text-[#1a73e8] cursor-pointer'
                 }`}
               >
                 Отмена
               </button>
               <button
                 type="submit"
-                className={`px-5 py-2 text-xs font-medium rounded-full transition-colors cursor-pointer ${
-                  isDark
-                    ? 'bg-[#8ab4f8] hover:bg-[#a8c7fa] text-[#202124]'
-                    : 'bg-[#1a73e8] hover:bg-[#1557b0] text-white'
+                disabled={isSubmitting}
+                className={`px-5 py-2 text-xs font-medium rounded-full transition-colors ${
+                  isSubmitting
+                    ? 'opacity-50 cursor-not-allowed bg-gray-500 text-white'
+                    : isDark
+                      ? 'bg-[#8ab4f8] hover:bg-[#a8c7fa] text-[#202124] cursor-pointer'
+                      : 'bg-[#1a73e8] hover:bg-[#1557b0] text-white cursor-pointer'
                 }`}
               >
-                Создать
+                {isSubmitting ? 'Создание...' : 'Создать'}
               </button>
             </div>
           </form>

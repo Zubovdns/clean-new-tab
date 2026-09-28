@@ -5,6 +5,7 @@ import { useDeviceFlow, DeviceFlowState, DeviceFlowTokenData } from '@hooks/useD
 import {
   DEFAULT_SYNC_SETTINGS,
   DEFAULT_GITHUB_CLIENT_ID,
+  CHROME_NTP_SYNC_SETTINGS_KEY,
   getSyncSettings,
   saveSyncSettings,
   fetchUserProfile,
@@ -45,12 +46,47 @@ export const useSync = (
 
   const localLastUpdatedAtRef = useRef<number>(0);
 
-  // Load saved sync settings on mount
+  // Load saved sync settings on mount and listen to cross-tab updates
   useEffect(() => {
     getSyncSettings().then((settings) => {
       setSyncSettings(settings);
       syncSettingsRef.current = settings;
     });
+
+    const handleStorageChange = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      areaName: string,
+    ) => {
+      if (areaName === 'local' && changes[CHROME_NTP_SYNC_SETTINGS_KEY]?.newValue) {
+        const newSettings = changes[CHROME_NTP_SYNC_SETTINGS_KEY].newValue as SyncSettings;
+        setSyncSettings(newSettings);
+        syncSettingsRef.current = newSettings;
+      }
+    };
+
+    if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
+      chrome.storage.onChanged.addListener(handleStorageChange);
+      return () => {
+        chrome.storage.onChanged.removeListener(handleStorageChange);
+      };
+    } else if (typeof window !== 'undefined') {
+      const handleWindowStorage = (e: StorageEvent) => {
+        if (e.key === CHROME_NTP_SYNC_SETTINGS_KEY && e.newValue) {
+          try {
+            const parsed = JSON.parse(e.newValue) as SyncSettings;
+            setSyncSettings(parsed);
+            syncSettingsRef.current = parsed;
+          } catch {
+            // ignore
+          }
+        }
+      };
+
+      window.addEventListener('storage', handleWindowStorage);
+      return () => {
+        window.removeEventListener('storage', handleWindowStorage);
+      };
+    }
   }, []);
 
   // Cleanup debounce timer on unmount

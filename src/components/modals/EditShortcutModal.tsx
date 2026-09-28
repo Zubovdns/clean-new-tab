@@ -7,30 +7,49 @@ export interface EditShortcutModalProps {
   isDark: boolean;
   sections: ChromeSection[];
   onClose: () => void;
-  onSave: (data: EditingShortcutData) => void;
-  onDelete: (id: string, sectionId: string) => void;
+  onSave: (data: EditingShortcutData) => void | Promise<void>;
+  onDelete: (id: string, sectionId: string) => void | Promise<void>;
 }
 
 export const EditShortcutModal = React.memo(
   ({ data, isDark, sections, onClose, onSave, onDelete }: EditShortcutModalProps) => {
     const [formData, setFormData] = useState<EditingShortcutData | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
       setFormData(data ? { ...data } : null);
+      setIsSubmitting(false);
     }, [data]);
 
     if (!data || !formData) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!formData.url.trim()) return;
-      onSave(formData);
-      onClose();
+      if (!formData.url.trim() || isSubmitting) return;
+
+      setIsSubmitting(true);
+      try {
+        await onSave(formData);
+        onClose();
+      } catch (err) {
+        console.error('[EditShortcutModal] Error saving shortcut:', err);
+      } finally {
+        setIsSubmitting(false);
+      }
     };
 
-    const handleDelete = () => {
-      onDelete(formData.id, formData.sectionId);
-      onClose();
+    const handleDelete = async () => {
+      if (isSubmitting) return;
+
+      setIsSubmitting(true);
+      try {
+        await onDelete(formData.id, formData.sectionId);
+        onClose();
+      } catch (err) {
+        console.error('[EditShortcutModal] Error deleting shortcut:', err);
+      } finally {
+        setIsSubmitting(false);
+      }
     };
 
     return (
@@ -122,32 +141,43 @@ export const EditShortcutModal = React.memo(
               <button
                 type="button"
                 onClick={handleDelete}
-                className="text-xs text-red-400 hover:text-red-300 font-medium cursor-pointer"
+                disabled={isSubmitting}
+                className={`text-xs font-medium transition-colors ${
+                  isSubmitting
+                    ? 'text-gray-500 opacity-50 cursor-not-allowed'
+                    : 'text-red-400 hover:text-red-300 cursor-pointer'
+                }`}
               >
-                Удалить
+                {isSubmitting ? 'Удаление...' : 'Удалить'}
               </button>
 
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={onClose}
-                  className={`px-4 py-2 text-xs font-medium rounded-full transition-colors cursor-pointer ${
-                    isDark
-                      ? 'hover:bg-[#3c4043] text-[#8ab4f8]'
-                      : 'hover:bg-[#f1f3f4] text-[#1a73e8]'
+                  disabled={isSubmitting}
+                  className={`px-4 py-2 text-xs font-medium rounded-full transition-colors ${
+                    isSubmitting
+                      ? 'opacity-50 cursor-not-allowed text-[#9aa0a6]'
+                      : isDark
+                        ? 'hover:bg-[#3c4043] text-[#8ab4f8] cursor-pointer'
+                        : 'hover:bg-[#f1f3f4] text-[#1a73e8] cursor-pointer'
                   }`}
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className={`px-5 py-2 text-xs font-medium rounded-full transition-colors cursor-pointer ${
-                    isDark
-                      ? 'bg-[#8ab4f8] hover:bg-[#a8c7fa] text-[#202124]'
-                      : 'bg-[#1a73e8] hover:bg-[#1557b0] text-white'
+                  disabled={isSubmitting}
+                  className={`px-5 py-2 text-xs font-medium rounded-full transition-colors ${
+                    isSubmitting
+                      ? 'opacity-50 cursor-not-allowed bg-gray-500 text-white'
+                      : isDark
+                        ? 'bg-[#8ab4f8] hover:bg-[#a8c7fa] text-[#202124] cursor-pointer'
+                        : 'bg-[#1a73e8] hover:bg-[#1557b0] text-white cursor-pointer'
                   }`}
                 >
-                  Готово
+                  {isSubmitting ? 'Сохранение...' : 'Готово'}
                 </button>
               </div>
             </div>

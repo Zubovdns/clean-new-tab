@@ -126,14 +126,16 @@ export const Newtab = () => {
     setActiveMenuId(null);
   }, []);
 
-  const handleSaveEditingSection = useCallback(() => {
+  const handleSaveEditingSection = useCallback(async () => {
     if (!editingSectionId) return;
-    updateSectionTitle(editingSectionId, editingSectionTitle);
+    const secId = editingSectionId;
+    const title = editingSectionTitle;
     setEditingSectionId(null);
+    await updateSectionTitle(secId, title);
   }, [editingSectionId, editingSectionTitle, updateSectionTitle]);
 
   const handleDeleteSection = useCallback(
-    (sectionId: string) => {
+    async (sectionId: string) => {
       const sec = sections.find((s) => s.id === sectionId);
       if (!sec) return;
 
@@ -142,8 +144,8 @@ export const Newtab = () => {
         if (!ok) return;
       }
 
-      deleteSection(sectionId);
       setActiveMenuId(null);
+      await deleteSection(sectionId);
     },
     [sections, deleteSection],
   );

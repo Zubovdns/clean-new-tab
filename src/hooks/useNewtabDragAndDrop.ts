@@ -4,23 +4,23 @@ import { ChromeSection, ChromeShortcutItem } from '@app-types';
 
 interface UseNewtabDragAndDropParams {
   sections: ChromeSection[];
-  reorderSections: (sourceIndex: number, destinationIndex: number) => void;
+  reorderSections: (sourceIndex: number, destinationIndex: number) => void | Promise<void>;
   reorderItemsInSameSection: (
     sectionId: string,
     sourceIndex: number,
     destinationIndex: number,
-  ) => void;
+  ) => void | Promise<void>;
   moveItemAcrossSections: (
     sourceSectionId: string,
     sourceItemIndex: number,
     targetSectionId: string,
     targetItemIndex: number,
-  ) => void;
+  ) => void | Promise<void>;
   moveItemToEndOfSection: (
     sourceSectionId: string,
     sourceItemIndex: number,
     targetSectionId: string,
-  ) => void;
+  ) => void | Promise<void>;
 }
 
 export const useNewtabDragAndDrop = ({

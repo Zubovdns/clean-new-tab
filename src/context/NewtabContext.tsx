@@ -11,11 +11,11 @@ export interface NewtabContextType {
   setEditingSectionId: (id: string | null) => void;
   setEditingSectionTitle: (title: string) => void;
   onStartEditingSection: (sec: ChromeSection) => void;
-  onSaveEditingSection: () => void;
-  onDeleteSection: (sectionId: string) => void;
+  onSaveEditingSection: () => void | Promise<void>;
+  onDeleteSection: (sectionId: string) => void | Promise<void>;
   onOpenAddModal: (sectionId: string) => void;
   onEditShortcut: (data: EditingShortcutData) => void;
-  onDeleteShortcut: (id: string, sectionId: string) => void;
+  onDeleteShortcut: (id: string, sectionId: string) => void | Promise<void>;
   onItemClick: (item: ChromeShortcutItem, sectionId: string) => void;
   getCachedFavicon: (url: string, favicon?: string) => string;
 
