@@ -16,37 +16,8 @@ export interface NewtabContextType {
   onOpenAddModal: (sectionId: string) => void;
   onEditShortcut: (data: EditingShortcutData) => void;
   onDeleteShortcut: (id: string, sectionId: string) => void | Promise<void>;
-  onItemClick: (item: ChromeShortcutItem, sectionId: string) => void;
+  onItemClick: (item: ChromeShortcutItem, sectionId: string, e?: React.MouseEvent) => void;
   getCachedFavicon: (url: string, favicon?: string) => string;
-
-  // Drag and Drop Orchestration
-  draggedSectionIndex: number | null;
-  dragOverSectionGap: number | null;
-  draggedItemCoords: { sectionId: string; itemIndex: number } | null;
-  dragOverItemInfo: { sectionId: string; itemIndex: number; position: 'before' | 'after' } | null;
-  dragOverSectionEndId: string | null;
-  onSectionDragStart: (e: React.DragEvent, index: number) => void;
-  onSectionDragEnd: () => void;
-  onSectionDragOver: (e: React.DragEvent, sectionIndex: number, isBottom: boolean) => void;
-  onSectionDrop: (e: React.DragEvent, sectionIndex: number, isBottom: boolean) => void;
-  onSectionBodyDragOver: (e: React.DragEvent, sectionId: string) => void;
-  onSectionBodyDrop: (e: React.DragEvent, sectionId: string) => void;
-  onItemDragStart: (e: React.DragEvent, sectionId: string, itemIndex: number) => void;
-  onItemDragEnd: () => void;
-  onItemDragOver: (
-    e: React.DragEvent,
-    sectionId: string,
-    itemIndex: number,
-    item: ChromeShortcutItem,
-    position: 'before' | 'after',
-  ) => void;
-  onItemDrop: (
-    e: React.DragEvent,
-    sectionId: string,
-    itemIndex: number,
-    item: ChromeShortcutItem,
-    position: 'before' | 'after',
-  ) => void;
 }
 
 const NewtabContext = createContext<NewtabContextType | null>(null);

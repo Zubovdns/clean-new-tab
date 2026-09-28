@@ -128,6 +128,18 @@ export const useSections = (onSectionsChangedLocally?: (updated: ChromeSection[]
     await setStorageItem(CHROME_NTP_SECTIONS_KEY, updated);
   }, []);
 
+  const setSectionsLocally = useCallback((updated: ChromeSection[]): void => {
+    sectionsRef.current = updated;
+    setSections(updated);
+  }, []);
+
+  const commitSections = useCallback(
+    async (updated: ChromeSection[]): Promise<void> => {
+      await saveSections(updated);
+    },
+    [saveSections],
+  );
+
   const createSection = useCallback(
     async (title: string): Promise<void> => {
       const trimmedTitle = title.trim();
@@ -358,5 +370,7 @@ export const useSections = (onSectionsChangedLocally?: (updated: ChromeSection[]
     moveItemAcrossSections,
     moveItemToEndOfSection,
     replaceSections,
+    setSectionsLocally,
+    commitSections,
   };
 };
