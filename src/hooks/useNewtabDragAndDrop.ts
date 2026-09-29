@@ -54,12 +54,23 @@ export const useNewtabDragAndDrop = ({
     sectionsRef.current = sections;
   }, [sections]);
 
+  useEffect(() => {
+    if (activeId) {
+      document.body.classList.add('is-dragging');
+    } else {
+      document.body.classList.remove('is-dragging');
+    }
+    return () => {
+      document.body.classList.remove('is-dragging');
+    };
+  }, [activeId]);
+
   const initialSectionsSnapshot = useRef<ChromeSection[] | null>(null);
   const lastOverIdRef = useRef<string | null>(null);
 
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
-      distance: 5,
+      distance: 8,
     },
   });
 

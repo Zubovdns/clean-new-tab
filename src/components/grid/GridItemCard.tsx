@@ -74,7 +74,7 @@ export const GridItemCard = React.memo(({ item, sectionId }: GridItemCardProps) 
       onAuxClick={(e) => {
         if (e.button === 1) onItemClick(item, sectionId, e);
       }}
-      className={`group relative w-28 h-28 rounded-lg flex flex-col items-center justify-center p-2 cursor-grab active:cursor-grabbing transition-colors duration-150 select-none touch-none ${
+      className={`group relative w-28 h-28 rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer transition-colors duration-150 select-none touch-none ${
         isDark ? 'hover:bg-[rgba(255,255,255,0.08)]' : 'hover:bg-[#ececec]'
       }`}
     >
