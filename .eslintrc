@@ -27,6 +27,7 @@
     "import/internal-regex": "^@(/|app-types|assets|components|hooks|locales|pages|src|utils)"
   },
   "rules": {
+    "react/prop-types": "off",
     "react/react-in-jsx-scope": "off",
     "import/order": [
       "error",

@@ -11,7 +11,7 @@ export interface AddItemModalProps {
   onSaveShortcut: (
     sectionId: string,
     data: { title: string; url: string; favicon?: string },
-  ) => void;
+  ) => void | Promise<void>;
 }
 
 export const AddItemModal = React.memo(
@@ -27,6 +27,7 @@ export const AddItemModal = React.memo(
     const [url, setUrl] = useState('');
     const [favicon, setFavicon] = useState('');
     const [selectedSectionId, setSelectedSectionId] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
       if (isOpen) {
@@ -34,22 +35,30 @@ export const AddItemModal = React.memo(
         setUrl('');
         setFavicon('');
         setSelectedSectionId(initialSectionId || sections[0]?.id || '');
+        setIsSubmitting(false);
       }
     }, [isOpen, initialSectionId, sections]);
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       const secId = selectedSectionId || sections[0]?.id;
-      if (!secId || !url.trim()) return;
+      if (!secId || !url.trim() || isSubmitting) return;
 
-      onSaveShortcut(secId, {
-        title: title.trim(),
-        url: url.trim(),
-        favicon: favicon.trim() || undefined,
-      });
-      onClose();
+      setIsSubmitting(true);
+      try {
+        await onSaveShortcut(secId, {
+          title: title.trim(),
+          url: url.trim(),
+          favicon: favicon.trim() || undefined,
+        });
+        onClose();
+      } catch (err) {
+        console.error('[AddItemModal] Error saving shortcut:', err);
+      } finally {
+        setIsSubmitting(false);
+      }
     };
 
     return (
@@ -143,21 +152,29 @@ export const AddItemModal = React.memo(
               <button
                 type="button"
                 onClick={onClose}
-                className={`px-4 py-2 text-xs font-medium rounded-full transition-colors cursor-pointer ${
-                  isDark ? 'hover:bg-[#3c4043] text-[#8ab4f8]' : 'hover:bg-[#f1f3f4] text-[#1a73e8]'
+                disabled={isSubmitting}
+                className={`px-4 py-2 text-xs font-medium rounded-full transition-colors ${
+                  isSubmitting
+                    ? 'opacity-50 cursor-not-allowed text-[#9aa0a6]'
+                    : isDark
+                      ? 'hover:bg-[#3c4043] text-[#8ab4f8] cursor-pointer'
+                      : 'hover:bg-[#f1f3f4] text-[#1a73e8] cursor-pointer'
                 }`}
               >
                 Отмена
               </button>
               <button
                 type="submit"
-                className={`px-5 py-2 text-xs font-medium rounded-full transition-colors cursor-pointer ${
-                  isDark
-                    ? 'bg-[#8ab4f8] hover:bg-[#a8c7fa] text-[#202124]'
-                    : 'bg-[#1a73e8] hover:bg-[#1557b0] text-white'
+                disabled={isSubmitting}
+                className={`px-5 py-2 text-xs font-medium rounded-full transition-colors ${
+                  isSubmitting
+                    ? 'opacity-50 cursor-not-allowed bg-gray-500 text-white'
+                    : isDark
+                      ? 'bg-[#8ab4f8] hover:bg-[#a8c7fa] text-[#202124] cursor-pointer'
+                      : 'bg-[#1a73e8] hover:bg-[#1557b0] text-white cursor-pointer'
                 }`}
               >
-                Готово
+                {isSubmitting ? 'Сохранение...' : 'Готово'}
               </button>
             </div>
           </form>
