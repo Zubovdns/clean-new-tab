@@ -16,4 +16,9 @@
       sans-serif;
     overscroll-behavior: none;
   }
+
+  body.is-dragging,
+  body.is-dragging * {
+    cursor: grabbing !important;
+  }
 }

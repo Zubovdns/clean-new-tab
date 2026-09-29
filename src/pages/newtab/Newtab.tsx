@@ -1,15 +1,18 @@
+import { DndContext, DragOverlay } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 import { NewtabProvider, NewtabContextType } from '@/context/NewtabContext';
 import { ChromeShortcutItem, ChromeSection, EditingShortcutData } from '@app-types';
 import { Icon } from '@components/common/Icon';
+import { GridItemOverlay, SectionOverlay } from '@components/dnd/DragOverlays';
 import { AddItemModal } from '@components/modals/AddItemModal';
 import { AddSectionModal } from '@components/modals/AddSectionModal';
 import { EditShortcutModal } from '@components/modals/EditShortcutModal';
 import { SettingsModal } from '@components/modals/SettingsModal';
 import { SectionCard } from '@components/section/SectionCard';
 import { useFaviconCache } from '@hooks/useFaviconCache';
-import { useNewtabDragAndDrop } from '@hooks/useNewtabDragAndDrop';
+import { useNewtabDragAndDrop, dropAnimationConfig } from '@hooks/useNewtabDragAndDrop';
 import { useSections } from '@hooks/useSections';
 import { useSync } from '@hooks/useSync';
 import { useTheme } from '@hooks/useTheme';
@@ -37,10 +40,9 @@ export const Newtab = () => {
     addShortcut,
     saveEditShortcut,
     deleteShortcut,
-    reorderItemsInSameSection,
-    moveItemAcrossSections,
-    moveItemToEndOfSection,
     replaceSections,
+    setSectionsLocally,
+    commitSections,
   } = useSections(handleSectionsChangedLocally);
 
   const handleRemoteSectionsLoaded = useCallback(
@@ -78,30 +80,24 @@ export const Newtab = () => {
 
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
-  // Drag and drop orchestration
+  // Modern @dnd-kit drag and drop orchestration
   const {
+    sensors,
+    activeId,
+    activeType,
+    activeItem,
+    activeSection,
     isDraggingRef,
-    draggedSectionIndex,
-    dragOverSectionGap,
-    draggedItemCoords,
-    dragOverItemInfo,
-    dragOverSectionEndId,
-    handleSectionDragStart,
-    handleSectionDragOver,
-    handleSectionDragEnd,
-    handleSectionDrop,
-    handleItemDragStart,
-    handleItemDragOver,
-    handleItemDragEnd,
-    handleItemDrop,
-    handleSectionBodyDragOver,
-    handleSectionBodyDrop,
+    collisionDetection,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+    handleDragCancel,
   } = useNewtabDragAndDrop({
     sections,
+    setSectionsLocally,
+    commitSections,
     reorderSections,
-    reorderItemsInSameSection,
-    moveItemAcrossSections,
-    moveItemToEndOfSection,
   });
 
   // Close active modals and dropdowns on Escape
@@ -126,14 +122,16 @@ export const Newtab = () => {
     setActiveMenuId(null);
   }, []);
 
-  const handleSaveEditingSection = useCallback(() => {
+  const handleSaveEditingSection = useCallback(async () => {
     if (!editingSectionId) return;
-    updateSectionTitle(editingSectionId, editingSectionTitle);
+    const secId = editingSectionId;
+    const title = editingSectionTitle;
     setEditingSectionId(null);
+    await updateSectionTitle(secId, title);
   }, [editingSectionId, editingSectionTitle, updateSectionTitle]);
 
   const handleDeleteSection = useCallback(
-    (sectionId: string) => {
+    async (sectionId: string) => {
       const sec = sections.find((s) => s.id === sectionId);
       if (!sec) return;
 
@@ -142,8 +140,8 @@ export const Newtab = () => {
         if (!ok) return;
       }
 
-      deleteSection(sectionId);
       setActiveMenuId(null);
+      await deleteSection(sectionId);
     },
     [sections, deleteSection],
   );
@@ -154,10 +152,14 @@ export const Newtab = () => {
   }, []);
 
   const handleItemClick = useCallback(
-    (item: ChromeShortcutItem) => {
+    (item: ChromeShortcutItem, _sectionId: string, e?: React.MouseEvent) => {
       if (isDraggingRef.current) return;
       const safeUrl = normalizeSafeUrl(item.url);
-      if (safeUrl) {
+      if (!safeUrl) return;
+
+      if (e && (e.button === 1 || e.ctrlKey || e.metaKey)) {
+        window.open(safeUrl, '_blank', 'noopener,noreferrer');
+      } else {
         window.location.href = safeUrl;
       }
     },
@@ -181,21 +183,6 @@ export const Newtab = () => {
       onDeleteShortcut: deleteShortcut,
       onItemClick: handleItemClick,
       getCachedFavicon,
-      draggedSectionIndex,
-      dragOverSectionGap,
-      draggedItemCoords,
-      dragOverItemInfo,
-      dragOverSectionEndId,
-      onSectionDragStart: handleSectionDragStart,
-      onSectionDragEnd: handleSectionDragEnd,
-      onSectionDragOver: handleSectionDragOver,
-      onSectionDrop: handleSectionDrop,
-      onSectionBodyDragOver: handleSectionBodyDragOver,
-      onSectionBodyDrop: handleSectionBodyDrop,
-      onItemDragStart: handleItemDragStart,
-      onItemDragEnd: handleItemDragEnd,
-      onItemDragOver: handleItemDragOver,
-      onItemDrop: handleItemDrop,
     }),
     [
       isDark,
@@ -209,21 +196,6 @@ export const Newtab = () => {
       deleteShortcut,
       handleItemClick,
       getCachedFavicon,
-      draggedSectionIndex,
-      dragOverSectionGap,
-      draggedItemCoords,
-      dragOverItemInfo,
-      dragOverSectionEndId,
-      handleSectionDragStart,
-      handleSectionDragEnd,
-      handleSectionDragOver,
-      handleSectionDrop,
-      handleSectionBodyDragOver,
-      handleSectionBodyDrop,
-      handleItemDragStart,
-      handleItemDragEnd,
-      handleItemDragOver,
-      handleItemDrop,
     ],
   );
 
@@ -233,125 +205,157 @@ export const Newtab = () => {
 
   return (
     <NewtabProvider value={contextValue}>
-      <div
-        className={`min-h-screen flex flex-col items-center justify-start font-sans transition-colors duration-150 py-12 px-6 select-none ${
-          isDark ? 'bg-[#202124] text-[#e8eaed]' : 'bg-white text-[#202124]'
-        }`}
-        onClick={() => {
-          if (activeMenuId) setActiveMenuId(null);
-          if (editingSectionId) handleSaveEditingSection();
-        }}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={collisionDetection}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
-        <div className="w-full max-w-[820px] flex flex-col gap-8">
-          {sections.map((section, sIdx) => (
-            <SectionCard
-              key={section.id}
-              section={section}
-              sectionIndex={sIdx}
-              totalSections={sections.length}
-            />
-          ))}
+        <div
+          className={`min-h-screen flex flex-col items-center justify-start font-sans transition-colors duration-150 py-12 px-6 select-none ${
+            isDark ? 'bg-[#202124] text-[#e8eaed]' : 'bg-white text-[#202124]'
+          }`}
+          onClick={() => {
+            if (activeMenuId) setActiveMenuId(null);
+            if (editingSectionId) handleSaveEditingSection();
+          }}
+        >
+          <div className="w-full max-w-[820px] flex flex-col gap-8">
+            <SortableContext
+              items={sections.map((section) => section.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {sections.map((section, sIdx) => (
+                <SectionCard
+                  key={section.id}
+                  section={section}
+                  sectionIndex={sIdx}
+                  totalSections={sections.length}
+                />
+              ))}
+            </SortableContext>
 
-          {/* Add section button */}
-          <div className="flex justify-center pt-2 pb-6">
+            {/* Add section button */}
+            <div className="flex justify-center pt-2 pb-6">
+              <button
+                type="button"
+                onClick={() => setIsAddSectionModalOpen(true)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full border text-xs font-medium cursor-pointer transition-all ${
+                  isDark
+                    ? 'border-[#3c4043] bg-[#28292c]/60 hover:bg-[#35363a] text-[#8ab4f8] hover:border-[#8ab4f8]'
+                    : 'border-[#dadce0] bg-white hover:bg-[#f1f3f4] text-[#1a73e8] hover:border-[#1a73e8]'
+                }`}
+              >
+                <Icon name="add_circle" size={18} />
+                <span>Добавить секцию</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Floating Settings & Sync Button */}
+          <div className="fixed top-5 right-6 z-30 flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setIsAddSectionModalOpen(true)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full border text-xs font-medium cursor-pointer transition-all ${
+              onClick={() => setIsSettingsOpen(true)}
+              className={`group flex items-center gap-2 px-3 py-2 rounded-full border text-xs font-medium cursor-pointer transition-all shadow-xs ${
                 isDark
-                  ? 'border-[#3c4043] bg-[#28292c]/60 hover:bg-[#35363a] text-[#8ab4f8] hover:border-[#8ab4f8]'
-                  : 'border-[#dadce0] bg-white hover:bg-[#f1f3f4] text-[#1a73e8] hover:border-[#1a73e8]'
+                  ? 'border-[#3c4043] bg-[#28292c]/80 hover:bg-[#35363a] text-[#e8eaed] hover:border-[#8ab4f8]'
+                  : 'border-[#dadce0] bg-white/90 hover:bg-[#f1f3f4] text-[#202124] hover:border-[#1a73e8]'
               }`}
+              title={
+                syncError
+                  ? `Ошибка синхронизации: ${syncError}`
+                  : isSyncing
+                    ? 'Выполняется синхронизация...'
+                    : syncSettings.enabled
+                      ? `Синхронизация активна (@${syncSettings.userLogin || 'GitHub'})`
+                      : 'Настройки и синхронизация'
+              }
             >
-              <Icon name="add_circle" size={18} />
-              <span>Добавить секцию</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Floating Settings & Sync Button */}
-        <div className="fixed top-5 right-6 z-30 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsSettingsOpen(true)}
-            className={`group flex items-center gap-2 px-3 py-2 rounded-full border text-xs font-medium cursor-pointer transition-all shadow-xs ${
-              isDark
-                ? 'border-[#3c4043] bg-[#28292c]/80 hover:bg-[#35363a] text-[#e8eaed] hover:border-[#8ab4f8]'
-                : 'border-[#dadce0] bg-white/90 hover:bg-[#f1f3f4] text-[#202124] hover:border-[#1a73e8]'
-            }`}
-            title={
-              syncError
-                ? `Ошибка синхронизации: ${syncError}`
-                : isSyncing
-                  ? 'Выполняется синхронизация...'
-                  : syncSettings.enabled
-                    ? `Синхронизация активна (@${syncSettings.userLogin || 'GitHub'})`
-                    : 'Настройки и синхронизация'
-            }
-          >
-            <Icon
-              name="settings"
-              size={16}
-              className={`transition-transform duration-300 group-hover:rotate-45 ${
-                isSyncing ? 'animate-spin text-[#8ab4f8]' : ''
-              }`}
-            />
-            {(syncSettings.enabled || syncError) && (
-              <span
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  syncError
-                    ? 'bg-red-500'
-                    : isSyncing
-                      ? 'bg-amber-400 animate-pulse'
-                      : 'bg-emerald-500'
+              <Icon
+                name="settings"
+                size={16}
+                className={`transition-transform duration-300 group-hover:rotate-45 ${
+                  isSyncing ? 'animate-spin text-[#8ab4f8]' : ''
                 }`}
               />
-            )}
-          </button>
+              {(syncSettings.enabled || syncError) && (
+                <span
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    syncError
+                      ? 'bg-red-500'
+                      : isSyncing
+                        ? 'bg-amber-400 animate-pulse'
+                        : 'bg-emerald-500'
+                  }`}
+                />
+              )}
+            </button>
+          </div>
+
+          <AddSectionModal
+            isOpen={isAddSectionModalOpen}
+            isDark={isDark}
+            onClose={() => setIsAddSectionModalOpen(false)}
+            onCreate={createSection}
+          />
+
+          <AddItemModal
+            isOpen={isAddModalOpen}
+            isDark={isDark}
+            sections={sections}
+            targetSectionId={targetSectionId}
+            onClose={() => setIsAddModalOpen(false)}
+            onSaveShortcut={addShortcut}
+          />
+
+          <EditShortcutModal
+            data={editingShortcut}
+            isDark={isDark}
+            sections={sections}
+            onClose={() => setEditingShortcut(null)}
+            onSave={saveEditShortcut}
+            onDelete={deleteShortcut}
+          />
+
+          <SettingsModal
+            isOpen={isSettingsOpen}
+            isDark={isDark}
+            onClose={() => setIsSettingsOpen(false)}
+            sections={sections}
+            onImportSections={replaceSections}
+            syncSettings={syncSettings}
+            isSyncing={isSyncing}
+            syncError={syncError}
+            deviceFlow={deviceFlow}
+            onStartDeviceFlow={startDeviceFlow}
+            onCancelDeviceFlow={cancelDeviceFlow}
+            onConnectWithPAT={connectWithPAT}
+            onDisconnect={disconnect}
+            onSyncNow={syncNow}
+          />
         </div>
 
-        <AddSectionModal
-          isOpen={isAddSectionModalOpen}
-          isDark={isDark}
-          onClose={() => setIsAddSectionModalOpen(false)}
-          onCreate={createSection}
-        />
-
-        <AddItemModal
-          isOpen={isAddModalOpen}
-          isDark={isDark}
-          sections={sections}
-          targetSectionId={targetSectionId}
-          onClose={() => setIsAddModalOpen(false)}
-          onSaveShortcut={addShortcut}
-        />
-
-        <EditShortcutModal
-          data={editingShortcut}
-          isDark={isDark}
-          sections={sections}
-          onClose={() => setEditingShortcut(null)}
-          onSave={saveEditShortcut}
-          onDelete={deleteShortcut}
-        />
-
-        <SettingsModal
-          isOpen={isSettingsOpen}
-          isDark={isDark}
-          onClose={() => setIsSettingsOpen(false)}
-          sections={sections}
-          onImportSections={replaceSections}
-          syncSettings={syncSettings}
-          isSyncing={isSyncing}
-          syncError={syncError}
-          deviceFlow={deviceFlow}
-          onStartDeviceFlow={startDeviceFlow}
-          onCancelDeviceFlow={cancelDeviceFlow}
-          onConnectWithPAT={connectWithPAT}
-          onDisconnect={disconnect}
-          onSyncNow={syncNow}
-        />
-      </div>
+        {/* Drag Overlay: follows pointer showing the dragged entity */}
+        <DragOverlay dropAnimation={dropAnimationConfig}>
+          {activeId && activeType === 'item' && activeItem && (
+            <GridItemOverlay
+              item={activeItem}
+              isDark={isDark}
+              getCachedFavicon={getCachedFavicon}
+            />
+          )}
+          {activeId && activeType === 'section' && activeSection && (
+            <SectionOverlay
+              section={activeSection}
+              isDark={isDark}
+              getCachedFavicon={getCachedFavicon}
+            />
+          )}
+        </DragOverlay>
+      </DndContext>
     </NewtabProvider>
   );
 };

@@ -1,6 +1,6 @@
 {
   "name": "clean-new-tab",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Custom New Tab override extension for Brave and Chromium browsers built with Vite, React, TypeScript, and Tailwind CSS.",
   "scripts": {
     "dev": "vite build --watch --config vite.config.chrome.ts --mode development",
@@ -20,6 +20,9 @@
   },
   "type": "module",
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
