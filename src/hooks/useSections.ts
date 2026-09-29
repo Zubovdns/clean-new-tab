@@ -231,28 +231,56 @@ export const useSections = (onSectionsChangedLocally?: (updated: ChromeSection[]
       const customIcon = data.favicon?.trim() || undefined;
       const { id, sectionId: targetSecId } = data;
 
-      // Remove from source section and place into target section
-      let foundShortcut: ChromeShortcutItem | null = null;
-      const cleanSections = sectionsRef.current.map((s) => ({
-        ...s,
-        items: s.items.filter((it) => {
-          if (it.id === id) {
-            foundShortcut = { ...it, title, url, favicon: customIcon };
-            return false;
-          }
-          return true;
-        }),
-      }));
+      // Ensure target section exists
+      if (!sectionsRef.current.some((s) => s.id === targetSecId)) return;
 
-      if (foundShortcut) {
-        const updated = cleanSections.map((s) => {
+      let foundShortcut: ChromeShortcutItem | null = null;
+      let sourceSectionId: string | null = null;
+
+      for (const s of sectionsRef.current) {
+        const item = s.items.find((it) => it.id === id);
+        if (item) {
+          sourceSectionId = s.id;
+          foundShortcut = { ...item, title, url, favicon: customIcon };
+          break;
+        }
+      }
+
+      if (!foundShortcut || !sourceSectionId) return;
+
+      let updated: ChromeSection[];
+
+      if (sourceSectionId === targetSecId) {
+        // Edit within same section: preserve original position
+        updated = sectionsRef.current.map((s) => {
           if (s.id === targetSecId) {
-            return { ...s, items: [...s.items, foundShortcut!] };
+            return {
+              ...s,
+              items: s.items.map((it) => (it.id === id ? foundShortcut! : it)),
+            };
           }
           return s;
         });
-        await saveSections(updated);
+      } else {
+        // Moved to another section: remove from source, append to target
+        updated = sectionsRef.current.map((s) => {
+          if (s.id === sourceSectionId) {
+            return {
+              ...s,
+              items: s.items.filter((it) => it.id !== id),
+            };
+          }
+          if (s.id === targetSecId) {
+            return {
+              ...s,
+              items: [...s.items, foundShortcut!],
+            };
+          }
+          return s;
+        });
       }
+
+      await saveSections(updated);
 
       // Proactively request background service worker to resolve favicon if changed
       if (!customIcon && typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
